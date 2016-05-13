@@ -1,0 +1,18 @@
+# config file that might hold secrets
+*.ini
+!sample_config.ini
+
+# running status of instances, don't keep them
+*json
+*log
+
+# OS generated files #
+######################
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
