@@ -1,3 +1,6 @@
+# compiled python
+*.pyc
+
 # config file that might hold secrets
 *.ini
 !sample_config.ini
