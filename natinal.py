@@ -579,7 +579,6 @@ def main():
 				game = nextGame(team,None,[masterScoreboardXml])
 				while game != None:
 					gddir = game.getAttribute("game_data_directory")
-					print gddir
 					gameProbs = getProbables(game)
 					if gameProbs != None and gameProbs != '':
 						dateStrippedProbs = stripProbableDate(gameProbs) # remove date, don't need it
