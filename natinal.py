@@ -614,20 +614,21 @@ def main():
 	tomorrowScoreboardXml = None
 	standings = None
 	
-	for newFinal in newResults["finals"]:
-		if tomorrowScoreboardXml == None:
-			tomorrowScoreboardXml = loadMasterScoreboard(masterScoreboardUrl,(todayDT + timedelta(days=1)))
-			standings = loadStandings(masterScoreboardXml,standingsJsonUrl,todayDT)
-		for teamId in newFinal["relevantteams"]:
-			probablesStr = getProbables(nextGame(teamId,newFinal["gamedir"],[masterScoreboardXml,tomorrowScoreboardXml],masterScoreboardUrl,6))
-			sTeam = standings[teamId]
-			divre = re.search(r'(\w)\w+ League (\w+)',sTeam["div"])
-			divShort = divre.groups()[0] + "L " + divre.groups()[1]
-			if probablesStr == None:
-				newFinal["probables"] = "No next game for " + teamId + " currently scheduled."
-			else:
-				newFinal["probables"] = probablesStr
-			newFinal["standings"] = teamId + " currently " + divOrdinal(sTeam["pos"]) + " " + divShort + " (" + str(sTeam["gb"]) + " GB)"
+	if "finals" in newResults:
+		for newFinal in newResults["finals"]:
+			if tomorrowScoreboardXml == None:
+				tomorrowScoreboardXml = loadMasterScoreboard(masterScoreboardUrl,(todayDT + timedelta(days=1)))
+				standings = loadStandings(masterScoreboardXml,standingsJsonUrl,todayDT)
+			for teamId in newFinal["relevantteams"]:
+				probablesStr = getProbables(nextGame(teamId,newFinal["gamedir"],[masterScoreboardXml,tomorrowScoreboardXml],masterScoreboardUrl,6))
+				sTeam = standings[teamId]
+				divre = re.search(r'(\w)\w+ League (\w+)',sTeam["div"])
+				divShort = divre.groups()[0] + "L " + divre.groups()[1]
+				if probablesStr == None:
+					newFinal["probables"] = "No next game for " + teamId + " currently scheduled."
+				else:
+					newFinal["probables"] = probablesStr
+				newFinal["standings"] = teamId + " currently " + divOrdinal(sTeam["pos"]) + " " + divShort + " (" + str(sTeam["gb"]) + " GB)"
 
 	for vn in validNotifiers:
 		# inherent assumption here: OK to resend whole package on notifier failure 
