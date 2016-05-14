@@ -1,11 +1,11 @@
 # natinal
 
-**N**ot
-**A**nother
-**T**wit
-**I**ssuing
-**N**otifications
-**A**bout the
+**N**ot  
+**A**nother  
+**T**wit  
+**I**ssuing  
+**N**otifications  
+**A**bout the  
 **L**ineups!
 
 (c) 2016 J. W. Crockett, Jr.
@@ -24,8 +24,12 @@ Meanwhile, I had been looking for an excuse to buy and play with a Raspberry Pi,
 offered me a view into the nature and volume of requests going back and forth in my MLB.com Gameday 
 Audio tab.  A few weeks later, natinal (and his accompanying Slack webhook natinal_bot) was born.
 
-It's started as a simple cron-ready script that only relies on the Python 2 standard library, invoked by
+**natinal** runs as a cron-ready Python 2 script using standard library functions only, invoked by
 `caller.py`. Adherence to modern Python packaging standards is on hold.  The notifier architecture is 
-fairly simple -- if you'd like to add a new service, create a new class in `notifier` inheriting from 
-`NotifierClass.Notifier`.  Deciding which status updates are appropriate for the service is the service
-notifier class's job.
+fairly simple -- to add a new service, create a new class in `notifier` inheriting from 
+`NotifierClass.Notifier`.  The notifier class is responsible for deciding which updates are
+appropriate for its service, possibly with help from inputs in the config file.
+
+--
+
+<small>Please note http://gdx.mlb.com/components/copyright.txt, which covers the data sources owned by MLB Advanced Media, L.P. ("MLBAM") that this application consumes. The developer of this application claims no rights to or control over these sources or the data contained within. Users of this application are themselves solely responsible for assuring that their use of this application, the sources and the data contained within complies with any and all terms and conditions set by MLBAM.</small>
