@@ -345,7 +345,7 @@ def rollGames(msXML,teams,baghdadBob,pDict):
 
 def nextGame(teamId, afterGameDir, xmlList, masterScoreboardUrl=None, maxMoreDays=0):
 	# if afterGameDir = None, start from top of xmlList
-	# otherwise return first one you see that isn't afterGameDir
+	# otherwise return first one you see after reaching afterGameDir that isn't afterGameDir
 	# returns next game that has not yet reached start time
 	# if maxMoreDays is None, xmlList is fixed. Else it'll go from latest date in xmlList and add up to maxMoreDays
 	gameNodes = []
@@ -368,6 +368,11 @@ def nextGame(teamId, afterGameDir, xmlList, masterScoreboardUrl=None, maxMoreDay
 
 		moreDayCount += 1
 	
+		if afterGameDir == None:
+			afterGameDirReached = True
+		else:
+			afterGameDirReached = False
+
 		# now that we have all those in one list, we can do a for loop and break out of it clearly once found.
 		for game in gameNodes:
 			# attributes: (away_|home_)(name_abbrev = MIL|code = mil|team_city = Milwaukee|team_name = Brewers)(league_id = 104 (NL)/103 (AL))
@@ -376,7 +381,9 @@ def nextGame(teamId, afterGameDir, xmlList, masterScoreboardUrl=None, maxMoreDay
 			gameDir = game.getAttribute("game_data_directory")
 			statuses = game.getElementsByTagName("status")
 			teamId = teamId.upper()
-			if (teamId in (home,away)) and (len(statuses) > 0) and (statuses[0].getAttribute("status") in PREGAME_STATUS_CODES) and (gameDir != afterGameDir):
+			if gameDir == afterGameDir:
+				afterGameDirReached = True
+			if (teamId in (home,away)) and (len(statuses) > 0) and (statuses[0].getAttribute("status") in PREGAME_STATUS_CODES) and (gameDir != afterGameDir) and afterGameDirReached:
 				#print "next game for " + (afterGameDir if (afterGameDir != None) else "[NONE]") + teamId + " is " + game.getAttribute("game_data_directory")
 				return game
 		
@@ -571,6 +578,8 @@ def main():
 			try:
 				game = nextGame(team,None,[masterScoreboardXml])
 				while game != None:
+					gddir = game.getAttribute("game_data_directory")
+					print gddir
 					gameProbs = getProbables(game)
 					if gameProbs != None and gameProbs != '':
 						dateStrippedProbs = stripProbableDate(gameProbs) # remove date, don't need it
@@ -578,7 +587,7 @@ def main():
 							morningAnnounce.append(dateStrippedProbs)
 						# now put the raw one in pDict, because you'll compare that later
 						persistDict["results"]["probables"][game.getAttribute("game_data_directory")] = gameProbs
-					game = nextGame(team,game.getAttribute("game_data_directory"),[masterScoreboardXml])
+					game = nextGame(team,gddir,[masterScoreboardXml])
 			except Exception as e:
 				logging.error("firstOfTheDay failed for " + team + ", " + traceback.format_exc(e))
 		logging.debug("it's firstOfTheDay, morningAnnounce looks like " + str(morningAnnounce))
