@@ -13,16 +13,16 @@
 (Yes, the acronym's a terrible stretch. ref: http://www.uni-watch.com/2009/04/18/natinal-joke/, and 
 the daily race of Nationals beat writers for who tweets the starting lineup first.)
 
-I'm part of a long-running private chat that formed around the [Washington Nationals][http://nationals.com] (no, you may
+I'm part of a long-running private chat that formed around the [Washington Nationals](http://nationals.com) (no, you may
 not have an invitation) and, in the way of most interesting chats, migrated to Slack around 2015.
 One of the members is a notorious video-hound, and most of the rest of us at least want to see what's
 going on in the current game -- and maybe be reminded each morning of the schedule and probables,
 then hear if anything relevant happens between then and first pitch (rain, expected starter scratched
 after his pitching arm is severed in a horrifying Metro accident, etc.).
 
-Meanwhile, I had been looking for an excuse to buy and play with a Raspberry Pi, and [uBlock Origin][https://github.com/gorhill/uBlock] had
-offered me a very convenient view into the nature and volume of requests going back and forth in my [MLB.com][http://mlb.com] Gameday 
-Audio tab.  A few weeks later, **natinal** was born (as was its accompanying [Slack webhook][https://api.slack.com/incoming-webhooks] natinal_bot).
+Meanwhile, I had been looking for an excuse to buy and play with a Raspberry Pi, and [uBlock Origin](https://github.com/gorhill/uBlock) had
+offered me a very convenient view into the nature and volume of requests going back and forth in my [MLB.com](http://mlb.com) Gameday 
+Audio tab.  A few weeks later, **natinal** was born (as was its accompanying [Slack webhook](https://api.slack.com/incoming-webhooks) natinal_bot).
 
 **natinal** runs as a cron-ready Python 2 script using standard library functions only, invoked by
 `caller.py`. Adherence to modern Python packaging standards is on hold.  The notifier architecture is 
