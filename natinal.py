@@ -60,7 +60,7 @@ PREGAME_STATUS_CODES = ["Pre-Game", "Preview", "Warmup"]
 UNDERWAY_STATUS_CODES = ["In Progress", "Manager Challenge", "Review"]
 FINAL_STATUS_CODES = ["Final", "Game Over", "Completed Early"]
 ANNOUNCE_STATUS_CODES = ["Delayed Start", "Postponed", "Delayed"]
-#"validStatuses": ["Final", "Delayed", "In Progress", "Completed Early", "Preview", "Manager Challenge", "Pre-Game", "Game Over", "Warmup", "Review"]
+
 
 # MLB.com rolls to "today's" date at 1000 ET. This means you get a day's games until 10 AM ET the following day.
 # I prefer 9 as a good rollover/announcement time.  This setting is overridden by config:[general]/rolloverTime.
@@ -254,13 +254,6 @@ def rollGames(msXML,teams,baghdadBob,pDict):
 
 		statusElement = statuses[0]
 		statusAttr = statusElement.getAttribute("status")
-
-		# doing this entirely for testing value to build a list of statuses
-		if "validStatuses" not in pDict:
-			pDict["validStatuses"] = []
-		if statusAttr not in pDict["validStatuses"]:
-			pDict["validStatuses"].append(statusAttr)
-			newResults["backtalk"].append("NEW STATUS: " + statusAttr + " in " + gameId)
 	
 		if away in teams or home in teams:
 
