@@ -76,6 +76,14 @@ def divOrdinal(intStr):
 	else:
 		return str(theInt) + singleEnds[theInt % 10]
 
+def divShortName(teamDiv):
+	try:
+		divre = re.search(r'(\w)\w+ League (\w+)',teamDiv)
+		divShort = divre.groups()[0] + "L " + divre.groups()[1]
+		return divShort
+	except Exception, e:
+		return teamDiv
+		
 def stripProbableDate(probStr):
 	return re.sub("\, \d+\/\d+",",",probStr) # remove date, don't need it
 
@@ -622,13 +630,11 @@ def main():
 			for teamId in newFinal["relevantteams"]:
 				probablesStr = getProbables(nextGame(teamId,newFinal["gamedir"],[masterScoreboardXml,tomorrowScoreboardXml],masterScoreboardUrl,6))
 				sTeam = standings[teamId]
-				divre = re.search(r'(\w)\w+ League (\w+)',sTeam["div"])
-				divShort = divre.groups()[0] + "L " + divre.groups()[1]
 				if probablesStr == None:
 					newFinal["probables"] = "No next game for " + teamId + " currently scheduled."
 				else:
 					newFinal["probables"] = probablesStr
-				newFinal["standings"] = teamId + " currently " + divOrdinal(sTeam["pos"]) + " " + divShort + " (" + str(sTeam["gb"]) + " GB)"
+				newFinal["standings"] = teamId + " currently " + divOrdinal(sTeam["pos"]) + " " + divShortName(sTeam["div"]) + " (" + str(sTeam["gb"]) + " GB)"
 
 	for vn in validNotifiers:
 		# inherent assumption here: OK to resend whole package on notifier failure 
