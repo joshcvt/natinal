@@ -31,4 +31,4 @@ the daily race of Nationals beat writers for who tweets the starting lineup firs
 
 <a name="footnote2"/>2. Please note http://gdx.mlb.com/components/copyright.txt, which covers the data sources owned by MLB Advanced Media, L.P. ("MLBAM") that this application consumes. The developer of this application claims no rights to or control over these sources or the data contained within. Users of this application are themselves solely responsible for assuring that their use of this application, the sources and the data contained within complies with any and all terms and conditions set by MLBAM.</small>
 
-<a name="footnote3"/>3. Adherence to modern Python packaging standards is [an issue](#1), but not high-priority.
+<a name="footnote3"/>3. Adherence to modern Python packaging standards is [an issue](https://github.com/joshcvt/natinal/issues/1), but not high-priority.
