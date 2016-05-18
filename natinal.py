@@ -46,6 +46,9 @@ standingsJsonUrl = "http://mlb.mlb.com/lookup/json/named.standings_schedule_date
 mlbTvUrl = "http://m.mlb.com/tv/e${calendar_event_id}/"
 mlbAudioUrl = "http://m.mlb.com/tv/e${calendar_event_id}/?media_type=audio&clickOrigin=MSB&team=mlb"
 
+# doesn't exist until the lineups drop
+lineupsJsonUrl = "http://mlb.mlb.com/gen/lineups/${game_id}.json"
+
 # not using yet, but keeping for value
 highlightsOfficialPageTemplate = "http://m.mlb.com/video/v629584083/"
 playResultsByTimecodeUrl = "http://lwsa.mlb.com/tfs/tfs?file=/components/game/mlb/year_2016/month_04/day_30/gid_2016_04_30_wasmlb_slnmlb_1/plays.xml&timecode=20160430_182330"
@@ -57,6 +60,7 @@ BOTH = -99999
 
 INACTIVE_GAME_STATUS_CODES = ["Postponed", "Pre-Game", "Preview", "Warmup"]
 PREGAME_STATUS_CODES = ["Pre-Game", "Preview", "Warmup"]
+UPCOMING_STATUS_CODES = ["Pre-Game", "Warmup"]
 UNDERWAY_STATUS_CODES = ["In Progress", "Manager Challenge", "Review"]
 FINAL_STATUS_CODES = ["Final", "Game Over", "Completed Early"]
 ANNOUNCE_STATUS_CODES = ["Delayed Start", "Postponed", "Delayed"]
@@ -158,6 +162,15 @@ def pullHighlights(game, highlightTeamId, baghdadBob, pDict, newResults):
 
 	return (pDict, newResults)
 
+def pullLineups(gameId):
+
+	try:
+		usock = urllib.urlopen(Template(lineupsJsonUrl).substitute(game_id=gameId))
+		lineups = json.load(usock)
+		return lineups["lineups"]
+	except Exception:
+		return None
+		
 def loadMasterScoreboard(msURL, scheduleDT):
 	
 	logging.debug( "Running scoreboard for " + scheduleDT.strftime("%Y-%m-%d"))
@@ -238,7 +251,7 @@ def setupNotifiers(cfgParser):
 
 def rollGames(msXML,teams,baghdadBob,pDict):
 
-	newResults = { "highlights":[],"finals":[],"probables":[],"backtalk":[],"announce":[],"underway":[] }
+	newResults = { "highlights":[],"finals":[],"probables":[],"backtalk":[],"announce":[],"underway":[], "lineups": [] }
 	
 	for game in msXML.getElementsByTagName("game"):
 
@@ -291,7 +304,14 @@ def rollGames(msXML,teams,baghdadBob,pDict):
 				if curProbs != pDict["results"]["probables"][gameDataDir]:
 					newResults["probables"].append(stripProbableDate(curProbs))
 					pDict["results"]["probables"][gameDataDir] = curProbs
-		
+			
+			if statusAttr in UPCOMING_STATUS_CODES:
+				if gameId not in pDict["upcoming"]:
+					lineups = pullLineups(gameId)
+					if lineups != None:
+						pDict["upcoming"].append(gameId)
+						newResults["lineups"].append(lineups)
+			
 			if statusAttr in ANNOUNCE_STATUS_CODES or ("announce" in pDict and gameId in pDict["announce"]):
 				gameNowStr = " now " + statusAttr.lower()
 				if statusElement.getAttribute("reason") != "":
@@ -410,7 +430,7 @@ def getProbables(game):
 	runningStr += (re.sub("^(\d+)\/","",game.getAttribute("time_date")) + " " + game.getAttribute("time_zone"))
 	return runningStr
 
-def loadStandings(msXML, standingsUrlTemplate, scheduleDT):
+def pullStandings(msXML, standingsUrlTemplate, scheduleDT):
 	
 	baseStandingsUrl = Template(standingsUrlTemplate).substitute(year=scheduleDT.strftime("%Y"),slashDate=scheduleDT.strftime("%Y/%m/%d"))
 	byTeam = {}
@@ -560,8 +580,9 @@ def main():
 	for resType in ("highlights","probables","finals"):
 		if resType not in persistDict["results"]:
 			persistDict["results"][resType] = {}
-	if "underway" not in persistDict:
-		persistDict["underway"] = []
+	for annType in ("underway","upcoming"):
+		if annType not in persistDict:
+			persistDict[annType] = []
 
 	# get master scoreboard DOM doc. Confirms that there are games today too.
 	masterScoreboardXml = loadMasterScoreboard(masterScoreboardUrl,todayDT)
@@ -607,8 +628,6 @@ def main():
 	if len(morningAnnounce) > 0:
 		newResults["morningAnnounce"] = morningAnnounce # which is a list
 	
-	#print json.dumps(loadStandings(masterScoreboardXml,standingsJsonUrl,todayDT),indent=2)
-	
 	# we want to know next game for teamId in newResults["finals"][*]["relevantTeams"]
 	# declare it outside, then load it once inside if there's anything in newResults["finals"]
 	# anything farther forward, we'll make nextGame request out on the spot
@@ -619,7 +638,7 @@ def main():
 		for newFinal in newResults["finals"]:
 			if tomorrowScoreboardXml == None:
 				tomorrowScoreboardXml = loadMasterScoreboard(masterScoreboardUrl,(todayDT + timedelta(days=1)))
-				standings = loadStandings(masterScoreboardXml,standingsJsonUrl,todayDT)
+				standings = pullStandings(masterScoreboardXml,standingsJsonUrl,todayDT)
 			for teamId in newFinal["relevantteams"]:
 				probablesStr = getProbables(nextGame(teamId,newFinal["gamedir"],[masterScoreboardXml,tomorrowScoreboardXml],masterScoreboardUrl,6))
 				sTeam = standings[teamId]
@@ -647,7 +666,7 @@ def main():
 					else:
 						persistDict["staleResults"][vn.header] = stillStale
 			vn.pushResults(newResults)			
-		except Exception:
+		except Exception, e:
 			if "staleResults" not in persistDict:
 				persistDict["staleResults"] = {}
 			if vn.header not in persistDict["staleResults"]:

@@ -65,6 +65,16 @@ class SlackNotifier(Notifier):
 		for underwayDict in newres["underway"]:
 			payloadDict = { "text": "*" + underwayDict["game"] + " now underway: <" + underwayDict["audio"] + "|radio> / <" + underwayDict["video"] + "|TV>*" }
 			self._sendSlack(payloadDict,self.channels["announce_channel"])
+		for lineupsList in newres["lineups"]:
+			# home comes first for some reason
+			payloadDict = {"attachments" : [{ "mrkdwn_in":["text"],"text":"*Lineups for " + lineupsList[1]["team_name_full"] + " at " + lineupsList[0]["team_name_full"] + "*", "fallback" : "Lineups set for " + lineupsList[1]["team_file_code"].upper() + " at " + lineupsList[0]["team_file_code"].upper(), "fields" : [] }] }
+			for tln in reversed(lineupsList): 
+				field = {"short":True, "title":tln["team_file_code"].upper(), "value":""}
+				for player in tln["players"]:
+					field["value"] = field["value"] + ("\n" + player["last_name"] + ", " + player["position"])
+				field["value"] = re.sub(r"^\n","",field["value"])
+				payloadDict["attachments"][0]["fields"].append(field)
+			self._sendSlack(payloadDict,self.channels["announce_channel"])
 		
 	
 	def _sendSlack(self,payloadDict,channel=None):
