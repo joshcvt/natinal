@@ -21,26 +21,50 @@ class SlackNotifier(Notifier):
 			self.backtalk_atuser = "@" + cfgParser.get(insec,"backtalk_atuser").strip()
 		except Exception as e:
 			self.backtalk_atuser = ""
+		self.wingifs = []
+		self.lossgifs = []
+		try:
+			for i in cfgParser.get(insec,"wingifs").split(" "):
+				self.wingifs.append(i)
+		except:
+			pass
+		try:
+			for i in cfgParser.get(insec,"lossgifs").split(" "):
+				self.lossgifs.append(i)
+		except:
+			pass
 		
 	def pushResults(self,newres):
+
 		for (blurb, mp4) in newres["highlights"]:
 			payloadDict = {"text": (blurb + ": [<" + mp4 + "|mp4>]")}
 			self._sendSlack(payloadDict,self.channels["highlight_channel"])
+
 		for finalDict in newres["finals"]:
 			whereAreHighlights = ""
-			if self.useEasterEggs and re.search("Washington 0",finalDict["final"]):
+			if self.useEasterEggs:
 				random.seed()
+				
+			if self.useEasterEggs and re.search("Washington 0",finalDict["final"]):
 				if random.randint(0,3) == 0:
 					whereAreHighlights = "You're right, Chris, there are no highlights. Screw this. "
 			elif (self.channels["announce_channel"] != self.channels["highlight_channel"]) and (self.channels["highlight_channel"] != ""):
 				whereAreHighlights = "Highlights in " + self.channels["highlight_channel"] + ". "
+			
 			payloadDict = {"text": "*"+finalDict["final"]+".* "+whereAreHighlights+finalDict["standings"]+"\nNext: "+finalDict["probables"], "link_names" : 1}
+			
 			if self.useEasterEggs:
 				if re.search(", Washington",finalDict["final"]):
 					payloadDict["icon_emoji"] = ":l:"
+					if len(self.lossgifs) > 0:
+						payloadDict["attachments"] = [{"fallback": "NATS LOSE. [GIF]", "image_url": self.lossgifs[random.randint(1,len(self.lossgifs))-1]}]
 				else:
 					payloadDict["icon_emoji"] = ":w:"
+					if len(self.wingifs) > 0:
+						payloadDict["attachments"] = [{"fallback": "NATS WIN! [GIF]", "image_url": self.lossgifs[random.randint(1,len(self.wingifs))-1]}]
+
 			self._sendSlack(payloadDict,self.channels["announce_channel"])
+
 		if "backtalk" in newres.keys():
 			for backtalk in newres["backtalk"]:
 				payloadDict = {"text": self.backtalk_atuser + " " + backtalk, "link_names" : 1}
@@ -48,6 +72,7 @@ class SlackNotifier(Notifier):
 					self._sendSlack(payloadDict, self.channels["backtalk_channel"])
 				elif self.backtalk_atuser != "":
 					self._sendSlack(payloadDict,self.backtalk_atuser)
+
 		if "morningAnnounce" in newres.keys() and len(newres["morningAnnounce"]) > 0:
 			text = "Good morning. *TODAY'S GAME*:"
 			if (len(newres["morningAnnounce"]) > 1):
@@ -56,6 +81,7 @@ class SlackNotifier(Notifier):
 				text += ("\n" + g)
 			payloadDict = {"text":text}
 			self._sendSlack(payloadDict,self.channels["announce_channel"])
+
 		for prob in newres["probables"]:
 			payloadDict = {"text":"*PROBABLES UPDATE:* " + prob}
 			self._sendSlack(payloadDict,self.channels["announce_channel"])
@@ -65,6 +91,7 @@ class SlackNotifier(Notifier):
 		for underwayDict in newres["underway"]:
 			payloadDict = { "text": "*" + underwayDict["game"] + " now underway: <" + underwayDict["audio"] + "|radio> / <" + underwayDict["video"] + "|TV>*" }
 			self._sendSlack(payloadDict,self.channels["announce_channel"])
+
 		for lineupsList in newres["lineups"]:
 			# home comes first for some reason
 			payloadDict = {"attachments" : [{ "mrkdwn_in":["text","fields"],"text":"*Lineups for " + lineupsList[1]["team_name_full"] + " at " + lineupsList[0]["team_name_full"] + "*", "fallback" : "Lineups set for " + lineupsList[1]["team_file_code"].upper() + " at " + lineupsList[0]["team_file_code"].upper(), "fields" : [] }] }
