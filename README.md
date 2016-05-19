@@ -8,7 +8,7 @@
 **A**bout the  
 **L**ineups!<sup><a href="#footnote1">1</a></sup>
 
-(c) 2016 J. W. Crockett, Jr.<sup><a href="#footnote2">2</a></sup>
+(c) 2016 J. W. Crockett, Jr.<sup><a href="#footnote2">2</a></sup>, [@joshcvt](http://twitter.com/joshcvt)
 
 **natinal** is a Python 2 script to monitor MLB.com live gameday data feeds.  Run as a cron job, it relays certain gameday events and highlight video links to a configured set of services.
 
@@ -31,4 +31,4 @@ the daily race of Nationals beat writers for who tweets the starting lineup firs
 
 <a name="footnote2"/>2. Please note http://gdx.mlb.com/components/copyright.txt, which covers the data sources owned by MLB Advanced Media, L.P. ("MLBAM") that this application consumes. The developer of this application claims no rights to or control over these sources or the data contained within. Users of this application are themselves solely responsible for assuring that their use of this application, the sources and the data contained within complies with any and all terms and conditions set by MLBAM.</small>
 
-<a name="footnote3"/>3. Adherence to modern Python packaging standards is [an issue](https://github.com/joshcvt/natinal/issues/1), but not high-priority.
+<a name="footnote3"/>3. Refactoring to adhere to modern Python packaging standards is [an issue](https://github.com/joshcvt/natinal/issues/1), but not high-priority.
