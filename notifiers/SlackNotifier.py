@@ -67,11 +67,18 @@ class SlackNotifier(Notifier):
 			self._sendSlack(payloadDict,self.channels["announce_channel"])
 		for lineupsList in newres["lineups"]:
 			# home comes first for some reason
-			payloadDict = {"attachments" : [{ "mrkdwn_in":["text"],"text":"*Lineups for " + lineupsList[1]["team_name_full"] + " at " + lineupsList[0]["team_name_full"] + "*", "fallback" : "Lineups set for " + lineupsList[1]["team_file_code"].upper() + " at " + lineupsList[0]["team_file_code"].upper(), "fields" : [] }] }
+			payloadDict = {"attachments" : [{ "mrkdwn_in":["text","fields"],"text":"*Lineups for " + lineupsList[1]["team_name_full"] + " at " + lineupsList[0]["team_name_full"] + "*", "fallback" : "Lineups set for " + lineupsList[1]["team_file_code"].upper() + " at " + lineupsList[0]["team_file_code"].upper(), "fields" : [] }] }
 			for tln in reversed(lineupsList): 
 				field = {"short":True, "title":tln["team_file_code"].upper(), "value":""}
+				pos=0
 				for player in tln["players"]:
-					field["value"] = field["value"] + ("\n" + player["last_name"] + ", " + player["position"])
+					pos = pos + 1
+					if pos == 10:
+						# it's a pitcher, not actual batter
+						field["value"] = field["value"] + ("\n_" + player["last_name"] + ", " + player["position"] + "_")
+					else:
+						field["value"] = field["value"] + ("\n" + player["last_name"] + ", " + player["position"])
+					
 				field["value"] = re.sub(r"^\n","",field["value"])
 				payloadDict["attachments"][0]["fields"].append(field)
 			self._sendSlack(payloadDict,self.channels["announce_channel"])
@@ -81,7 +88,7 @@ class SlackNotifier(Notifier):
 		try:
 			if channel != None and channel != "":
 				payloadDict["channel"] = channel
-			if self.useEasterEggs and re.search("Roark",payloadDict["text"]) and re.search("Washington|WSH",payloadDict["text"]):
+			if self.useEasterEggs and ("text" in payloadDict) and re.search("Roark",payloadDict["text"]) and re.search("Washington|WSH",payloadDict["text"]):
 				random.seed()
 				if random.randint(0,9) == 0:
 					payloadDict["text"] = re.sub("(Tanner |)Roark","STAFF ACE Tanner Roark",payloadDict["text"])
