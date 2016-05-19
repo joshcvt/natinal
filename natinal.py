@@ -301,7 +301,7 @@ def rollGames(msXML,teams,baghdadBob,pDict):
 			# if it's in probables and probables are still relevant:
 			if gameDataDir in pDict["results"]["probables"].keys() and hasProbableNames(msXML) and len(game.getElementsByTagName("away_probable_pitcher")) > 0:
 				curProbs = getProbables(game)
-				if curProbs != pDict["results"]["probables"][gameDataDir]:
+				if curProbs != pDict["results"]["probables"][gameDataDir] and not gameProbablesNull(game):
 					newResults["probables"].append(stripProbableDate(curProbs))
 					pDict["results"]["probables"][gameDataDir] = curProbs
 			
@@ -509,6 +509,12 @@ def hasProbableNames(msXML):
 			return True
 	return False
 
+def gameProbablesNull(gameNode):
+	# check a single probables set -- GH-#3
+	try:
+		return (game.getElementsByTagName("away_probable_pitcher")[0].getAttribute("name_display_roster") == "" and game.getElementsByTagName("home_probable_pitcher")[0].getAttribute("name_display_roster") == "")
+	except:
+		return None
 def main():
 
 	config = ConfigParser.RawConfigParser()
