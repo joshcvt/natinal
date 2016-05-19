@@ -61,7 +61,7 @@ class SlackNotifier(Notifier):
 				else:
 					payloadDict["icon_emoji"] = ":w:"
 					if len(self.wingifs) > 0:
-						payloadDict["attachments"] = [{"fallback": "NATS WIN! [GIF]", "image_url": self.lossgifs[random.randint(1,len(self.wingifs))-1]}]
+						payloadDict["attachments"] = [{"fallback": "NATS WIN! [GIF]", "image_url": self.wingifs[random.randint(1,len(self.wingifs))-1]}]
 
 			self._sendSlack(payloadDict,self.channels["announce_channel"])
 
