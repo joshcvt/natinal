@@ -423,7 +423,7 @@ def nextGame(teamId, afterGameDir, xmlList, masterScoreboardUrl=None, maxMoreDay
 			if gameDir == afterGameDir:
 				afterGameDirReached = True
 			if (teamId in (home,away)) and (len(statuses) > 0) and (statuses[0].getAttribute("status") in PREGAME_STATUS_CODES) and (gameDir != afterGameDir) and afterGameDirReached:
-				#print "next game for " + (afterGameDir if (afterGameDir != None) else "[NONE]") + teamId + " is " + game.getAttribute("game_data_directory")
+				logging.debug( "next game for " + (afterGameDir if (afterGameDir != None) else "[NONE]") + teamId + " is " + game.getAttribute("game_data_directory"))
 				return game
 		
 	return None
@@ -494,7 +494,7 @@ def pullStandings(msXML, standingsUrlTemplate, scheduleDT):
 		# this leaves both structures pointing to the same team objects.  this will be useful.
 		
 	for k in sorted(byDivList,key=lambda div: re.sub("Central","Middle",div)): # so we get E/C/W
-		#print k
+	
 		byDivList[k].sort(key=lambda team: ( -team["w"]/(team["w"]+team["l"]), -team["w"]) )
 		firstW = None
 		firstL = None
@@ -515,7 +515,6 @@ def pullStandings(msXML, standingsUrlTemplate, scheduleDT):
 				else:
 					team["pos"] = str(rank)
 				
-			#print "\t" + team["name"] + ", " + str(int(team["w"])) + "-" + str(team["l"]) + ", " + str(team["gb"]) + " GB " + team["pos"]
 			prev = team
 			
 	return byTeam
@@ -680,7 +679,7 @@ def main():
 		try:
 			if "staleResults" in persistDict:
 				if vn.header in persistDict["staleResults"]:
-					print "haz a staleResult for " + vn.header
+					logging.error("haz a staleResult for " + vn.header + " " + persistDict["staleResults"][vn.header].keys())
 					stillStale = []
 					for rset in persistDict["staleResults"][vn.header]:
 						try:
