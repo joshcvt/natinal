@@ -526,7 +526,7 @@ def hasProbableNames(msXML):
 			return True
 	return False
 
-def gameProbablesNull(gameNode):
+def gameProbablesNull(game):
 	# check a single probables set -- GH-#3
 	try:
 		return (game.getElementsByTagName("away_probable_pitcher")[0].getAttribute("name_display_roster") == "" and game.getElementsByTagName("home_probable_pitcher")[0].getAttribute("name_display_roster") == "")
