@@ -303,12 +303,12 @@ def rollGames(msXML,teams,baghdadBob,pDict):
 			dateStr = "-".join(gameId.split("/")[0:3])
 			if dateStr != pDict["todayStr"]:
 				if statusAttr in FINAL_STATUS_CODES:
-					logging.DEBUG("tossing out completed game " + gameId)
+					logging.info("tossing out completed nontoday game " + gameId)
 					continue
 				else:
 					gameslead = msXML.getElementsByTagName["games"][0]
 					backtalk = "Incomplete non-today game found: " + gameId + " in http://gdx.mlb.com/gdcross/components/game/mlb/year_" + gameslead.getAttribute("year") + "/month_" + gameslead.getAttribute("month") + "/day_" + gameslead.getAttribute("day") + "/master_scoreboard.xml -- check out"
-					logging.WARN(backtalk)
+					logging.warn(backtalk)
 					if "backtalk" not in pDict:
 						pDict["backtalk"] = [backtalk]
 					if backtalk not in pDict["backtalk"]:
