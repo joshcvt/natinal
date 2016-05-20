@@ -12,7 +12,7 @@ class SlackNotifier(Notifier):
 		except Exception:
 			self.useEasterEggs = False
 		self.channels = { }
-		for chan in ("backtalk_channel", "announce_channel", "highlight_channel"):
+		for chan in ("backtalk_channel", "announce_channel", "highlight_channel","lineups_channel"):
 			try:
 				self.channels[chan] = "#" + cfgParser.get(insec,chan).strip()
 			except Exception as e:
@@ -108,7 +108,7 @@ class SlackNotifier(Notifier):
 					
 				field["value"] = re.sub(r"^\n","",field["value"])
 				payloadDict["attachments"][0]["fields"].append(field)
-			self._sendSlack(payloadDict,self.channels["announce_channel"])
+			self._sendSlack(payloadDict,self.channels["lineups_channel"])
 		
 	
 	def _sendSlack(self,payloadDict,channel=None):
