@@ -102,9 +102,9 @@ class SlackNotifier(Notifier):
 					pos = pos + 1
 					if pos == 10:
 						# it's a pitcher, not actual batter
-						field["value"] = field["value"] + ("\n_" + player["last_name"] + ", " + player["position"] + "_")
+						field["value"] = field["value"] + ("\n_" + player["last_name"] + ", " + player["first_name"][0] + ". " + player["position"] + "_")
 					else:
-						field["value"] = field["value"] + ("\n" + player["last_name"] + ", " + player["position"])
+						field["value"] = field["value"] + ("\n" + player["last_name"] + ", " + player["first_name"][0] + ". " + player["position"])
 					
 				field["value"] = re.sub(r"^\n","",field["value"])
 				payloadDict["attachments"][0]["fields"].append(field)

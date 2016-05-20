@@ -15,7 +15,7 @@
 
 # Please note http://gdx.mlb.com/components/copyright.txt, which covers the data sources owned by MLB Advanced Media, L.P. ("MLBAM") that this application consumes. The developer of this application claims no rights to or control over these sources or the data contained within. Users of this application are themselves solely responsible for assuring that their use of this application, the sources and the data contained within complies with any and all terms and conditions set by MLBAM.
 
-import xml.dom, urllib, ConfigParser, json, logging, traceback, re
+import xml.dom, urllib, ConfigParser, json, logging, traceback, re, argparse
 from datetime import timedelta, datetime
 from string import Template
 from xml.dom.minidom import parse
@@ -23,12 +23,18 @@ from os import sys
 
 import notifiers
 
+parser = argparse.ArgumentParser()
+parser.add_argument("-c","--config")
+parser.add_argument("-f","--file")
+args = parser.parse_args()
 
-# make sure this is in .gitignore.  offer a model instead
 configFN = "config.ini"
-if len(sys.argv) >= 3 and sys.argv[1] == "-c":
-	configFN = sys.argv[2]
+
+if args.config:
+	configFN = args.config
 	print "running as config: " + configFN
+masterScoreboardOverride = args.file
+
 logLevel = logging.INFO		# .DEBUG
 
 teamDirectoryUrl = "http://mlb.com/lookup/xml/named.team_all.bam?sport_code=%27mlb%27&active_sw=%27Y%27&all_star_sw=%27N%27"
@@ -166,29 +172,40 @@ def pullLineups(gameId):
 
 	try:
 		usock = urllib.urlopen(Template(lineupsJsonUrl).substitute(game_id=gameId))
+		logging.debug("pullLineups " + gameId + " " + Template(lineupsJsonUrl).substitute(game_id=gameId) + " fetch HTTP " + str(usock.getcode()))
 		lineups = json.load(usock)
-		return lineups["lineups"]
-	except Exception:
+		ret = lineups["lineups"]
+		if len(ret[0]["players"]) < 9 or len(ret[1]["players"]) < 9:
+			logging.debug("pullLineups " + gameId + " bugging out because of lens " + str(len(ret[0])) + " " + str(len(ret[1])) )
+			return None
+		logging.debug("pullLineups " + gameId + "returning successfully")
+		return ret
+	except Exception, e:
+		logging.debug("pullLineups " + gameId + " exception: " + traceback.format_exc(e))
 		return None
 		
-def loadMasterScoreboard(msURL, scheduleDT):
+def loadMasterScoreboard(msURL, scheduleDT, msOverrideFN=None):
 	
-	logging.debug( "Running scoreboard for " + scheduleDT.strftime("%Y-%m-%d"))
-	scheduleUrl = scheduleDT.strftime(msURL)
+	if not msOverrideFN:
+		logging.debug( "Running scoreboard for " + scheduleDT.strftime("%Y-%m-%d"))
+		scheduleUrl = scheduleDT.strftime(msURL)
 
-	usock = urllib.urlopen(scheduleUrl)
-	if (usock.getcode() == 404):
-		logging.info("Schedule not found. Either there are no games today or MLBAM has changed the master scoreboard URL.\n")
-		return None
-	elif (usock.getcode() != 200):
-		logging.error("HELP! Get schedule failed with HTTP code " + str(usock.getcode()) + " on URL:\n\t" + scheduleUrl + "\n")
-		raise Exception("Get schedule failed (non-404) with HTTP code " + str(usock.getcode()) + " on URL:\n\t" + scheduleUrl + "\n")
+		usock = urllib.urlopen(scheduleUrl)
+		if (usock.getcode() == 404):
+			logging.info("Schedule not found. Either there are no games today or MLBAM has changed the master scoreboard URL.\n")
+			return None
+		elif (usock.getcode() != 200):
+			logging.error("HELP! Get schedule failed with HTTP code " + str(usock.getcode()) + " on URL:\n\t" + scheduleUrl + "\n")
+			raise Exception("Get schedule failed (non-404) with HTTP code " + str(usock.getcode()) + " on URL:\n\t" + scheduleUrl + "\n")
+	else:
+		logging.debug("Running file scoreboard from " + msOverrideFN)
+		usock = open(msOverrideFN)
 		
 	try:
 		masterScoreboardXml = parse(usock)
 		usock.close()
 	except Exception as e:
-		logging.error("MSXML parse failed on URL:\n\t" + scheduleUrl + "\n" + traceback.format_exc(e))
+		logging.error("MSXML parse failed on " + (msOverrideFN if msOverrideFn else ("URL:\n\t" + scheduleUrl)) + "\n" + traceback.format_exc(e))
 		usock.close()
 		return None
 
@@ -269,7 +286,8 @@ def rollGames(msXML,teams,baghdadBob,pDict):
 		statusAttr = statusElement.getAttribute("status")
 	
 		if away in teams or home in teams:
-
+			logging.debug("looking at " + gameId + " status " + statusAttr)
+			
 			highlightTeamId = 0	#declaration for scoping
 			highlightTeamSingleKey = "" # same, for return in relevantteams ONLY
 			if (away in teams and home in teams):
@@ -515,6 +533,8 @@ def gameProbablesNull(gameNode):
 		return (game.getElementsByTagName("away_probable_pitcher")[0].getAttribute("name_display_roster") == "" and game.getElementsByTagName("home_probable_pitcher")[0].getAttribute("name_display_roster") == "")
 	except:
 		return None
+
+
 def main():
 
 	config = ConfigParser.RawConfigParser()
@@ -591,7 +611,7 @@ def main():
 			persistDict[annType] = []
 
 	# get master scoreboard DOM doc. Confirms that there are games today too.
-	masterScoreboardXml = loadMasterScoreboard(masterScoreboardUrl,todayDT)
+	masterScoreboardXml = loadMasterScoreboard(masterScoreboardUrl,todayDT,masterScoreboardOverride)
 		
 	# load requested teams and sanity-check. if we make it back from this call,  we're good to go forward and have at least one specified team
 	(validTeams,persistDict) = getValidTeams(config,teamDirectoryUrl,persistDict)
@@ -685,4 +705,4 @@ def main():
 		json.dump(persistDict,file(persistFN,'w'),indent=2)
 	except TypeError as e:
 		# dumps will trip this, keeping us from blowing away the persistFN
-		logging.error("persistDict failed serialization. what's up? " + e.toString() + ", Dict: " + persistDict.toString())
+		logging.error("persistDict failed serialization. what's up? " + traceback.format_exc(e) + ", Dict: " + persistDict.toString())

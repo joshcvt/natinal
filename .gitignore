@@ -5,9 +5,10 @@
 *.ini
 !sample_config.ini
 
-# running status of instances, don't keep them
+# running status of instances and test files, don't keep them
 *json
 *log
+*xml
 
 # OS generated files #
 ######################
