@@ -9,6 +9,7 @@ class SlackNotifier(Notifier):
 		self.webhook = cfgParser.get(insec,"webhook_url").strip()
 		try:
 			self.useEasterEggs = cfgParser.get("general","useEasterEggs")
+			random.seed()
 		except Exception:
 			self.useEasterEggs = False
 		self.channels = { }
@@ -42,18 +43,16 @@ class SlackNotifier(Notifier):
 
 		for finalDict in newres["finals"]:
 			whereAreHighlights = ""
-			if self.useEasterEggs:
-				random.seed()
 				
 			if self.useEasterEggs and re.search("Washington 0",finalDict["final"]):
-				if random.randint(0,3) == 0:
+				if (random.randint(0,9) == 0):
 					whereAreHighlights = "You're right, Chris, there are no highlights. Screw this. "
 			elif (self.channels["announce_channel"] != self.channels["highlight_channel"]) and (self.channels["highlight_channel"] != ""):
 				whereAreHighlights = "Highlights in " + self.channels["highlight_channel"] + ". "
 			
 			payloadDict = {"text": "*"+finalDict["final"]+".* "+whereAreHighlights+finalDict["standings"]+"\nNext: "+finalDict["probables"], "link_names" : 1}
 			
-			if self.useEasterEggs:
+			if self.useEasterEggs and re.search("Washington",finalDict["final"]):
 				if re.search(", Washington",finalDict["final"]):
 					payloadDict["icon_emoji"] = ":l:"
 					if len(self.lossgifs) > 0:
@@ -116,8 +115,7 @@ class SlackNotifier(Notifier):
 			if channel != None and channel != "":
 				payloadDict["channel"] = channel
 			if self.useEasterEggs and ("text" in payloadDict) and re.search("Roark",payloadDict["text"]) and re.search("Washington|WSH",payloadDict["text"]):
-				random.seed()
-				if random.randint(0,9) == 0:
+				if (random.randint(0,9) == 0):
 					payloadDict["text"] = re.sub("(Tanner |)Roark","STAFF ACE Tanner Roark",payloadDict["text"])
 			data = urllib.urlencode({"payload": json.dumps(payloadDict)})
 			logging.debug("about to request " + json.dumps(payloadDict) + "\n" + data + "\nat " + self.webhook)
