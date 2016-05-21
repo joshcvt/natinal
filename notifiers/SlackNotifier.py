@@ -50,7 +50,7 @@ class SlackNotifier(Notifier):
 			elif (self.channels["announce_channel"] != self.channels["highlight_channel"]) and (self.channels["highlight_channel"] != ""):
 				whereAreHighlights = "Highlights in " + self.channels["highlight_channel"] + ". "
 			
-			payloadDict = {"text": "*"+finalDict["final"]+".* "+whereAreHighlights+finalDict["standings"]+"\nNext: "+finalDict["probables"], "link_names" : 1}
+			payloadDict = {"text": "*"+finalDict["final"]+".* "+whereAreHighlights+finalDict["standings"], "link_names" : 1}
 			
 			if self.useEasterEggs and re.search("Washington",finalDict["final"]):
 				if re.search(", Washington",finalDict["final"]):
@@ -61,8 +61,13 @@ class SlackNotifier(Notifier):
 					payloadDict["icon_emoji"] = ":w:"
 					if len(self.wingifs) > 0:
 						payloadDict["attachments"] = [{"fallback": "NATS WIN! [GIF]", "image_url": self.wingifs[random.randint(1,len(self.wingifs))-1]}]
+				
+				self._sendSlack(payloadDict,self.channels["announce_channel"])
+				self._sendSlack({"link_names":1,"text":"Next: "+finalDict["probables"]}, self.channels["announce_channel"])
 
-			self._sendSlack(payloadDict,self.channels["announce_channel"])
+			else:
+				payloadDict["text"] = payloadDict["text"] + "\nNext: "+finalDict["probables"]
+				self._sendSlack(payloadDict,self.channels["announce_channel"])			
 
 		if "backtalk" in newres.keys():
 			for backtalk in newres["backtalk"]:
