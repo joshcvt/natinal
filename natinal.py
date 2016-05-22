@@ -340,13 +340,21 @@ def rollGames(msXML,teams,baghdadBob,pDict):
 					newResults["announce"].append(gameStr + gameNowStr)
 			
 			if statusAttr in UNDERWAY_STATUS_CODES and gameId not in pDict["underway"]:
-				pDict["underway"].append(gameId)
+				
+				# test for Fox exclusive, but don't fail if the element isn't there
+				try:
+					foxExclusive = (game.getElementsByTagName("links")[0].getAttribute("tv_station") == "FOX")
+				except:
+					foxExclusive = False
+				
 				try:
 					cevId = game.getElementsByTagName("media")[0].getAttribute("calendar_event_id")
+					pDict["underway"].append(gameId)
 					newResults["underway"].append( { "game": gameStr, 
 						"audio": Template(mlbAudioUrl).substitute(calendar_event_id=cevId),
-						"video": Template(mlbTvUrl).substitute(calendar_event_id=cevId) } )
-				except Exception:
+						"video": Template(mlbTvUrl).substitute(calendar_event_id=cevId) ,
+						"foxExclusive": foxExclusive } )
+				except:
 					log.error("Game underway but couldn't get <media calendar_event_id=...> for " + gameId)
 							
 			if statusAttr not in INACTIVE_GAME_STATUS_CODES:	# only the ones with a game in progress or complete
