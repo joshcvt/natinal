@@ -52,15 +52,15 @@ class SlackNotifier(Notifier):
 			
 			payloadDict = {"text": "*"+finalDict["final"]+".* "+whereAreHighlights+finalDict["standings"], "link_names" : 1}
 			
-			if self.useEasterEggs and re.search("Washington",finalDict["final"]):
-				if re.search(", Washington",finalDict["final"]):
+			if self.useEasterEggs: # and re.search("Washington",finalDict["final"]):
+				if finalDict["result"] == "loss":
 					payloadDict["icon_emoji"] = ":l:"
 					if len(self.lossgifs) > 0:
-						payloadDict["attachments"] = [{"fallback": "NATS LOSE. [GIF]", "image_url": self.lossgifs[random.randint(1,len(self.lossgifs))-1]}]
-				else:
+						payloadDict["attachments"] = [{"fallback": "LOSS [GIF]", "image_url": self.lossgifs[random.randint(1,len(self.lossgifs))-1]}]
+				elif finalDict["result"] == "win":
 					payloadDict["icon_emoji"] = ":w:"
 					if len(self.wingifs) > 0:
-						payloadDict["attachments"] = [{"fallback": "NATS WIN! [GIF]", "image_url": self.wingifs[random.randint(1,len(self.wingifs))-1]}]
+						payloadDict["attachments"] = [{"fallback": "WIN! [GIF]", "image_url": self.wingifs[random.randint(1,len(self.wingifs))-1]}]
 				
 				self._sendSlack(payloadDict,self.channels["announce_channel"])
 				self._sendSlack({"link_names":1,"text":"Next: "+finalDict["probables"]}, self.channels["announce_channel"])

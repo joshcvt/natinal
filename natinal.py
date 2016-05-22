@@ -369,10 +369,18 @@ def rollGames(msXML,teams,baghdadBob,pDict):
 				if gameDataDir not in pDict["results"]["finals"].keys():
 					pDict["results"]["finals"][gameDataDir] = (gameDataDir, statusStr)
 					finalDict = {"gamedir":gameDataDir,"final":statusStr}
+					
 					if highlightTeamId == BOTH:
 						finalDict["relevantteams"] = [home,away]
+						finalDict["result"] = "neutral"
 					else:
+						runsElem = game.getElementsByTagName("r")[0]
 						finalDict["relevantteams"] = [highlightTeamName]
+						if (home in teams and int(runsElem.getAttribute("home")) > int(runsElem.getAttribute("away"))) or (away in teams and int(runsElem.getAttribute("away")) > int(runsElem.getAttribute("home"))):
+							finalDict["result"] = "win"
+						else:
+							finalDict["result"] = "loss"
+						
 					logging.debug(finalDict)
 					newResults["finals"].append(finalDict)
 
