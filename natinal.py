@@ -26,6 +26,9 @@ import notifiers
 logLevel = logging.INFO		# .DEBUG
 configFN = "config.ini"		# may be overridden by -c fn.ini
 
+# MLB.com rolls to "today's" date at 1000 ET. This means you get a day's games until 10 AM ET the following day.
+# I prefer 9 as a good rollover/announcement time.  This setting is overridden by config:[general]/rolloverTime.
+defaultRolloverTime="0900"
 
 teamDirectoryUrl = "http://mlb.com/lookup/xml/named.team_all.bam?sport_code=%27mlb%27&active_sw=%27Y%27&all_star_sw=%27N%27"
 # http://mlb.mlb.com/properties/mlb_properties.xml is a less-good alternate
@@ -62,9 +65,6 @@ FINAL_STATUS_CODES = ["Final", "Game Over", "Completed Early"]
 ANNOUNCE_STATUS_CODES = ["Delayed Start", "Postponed", "Delayed"]
 
 
-# MLB.com rolls to "today's" date at 1000 ET. This means you get a day's games until 10 AM ET the following day.
-# I prefer 9 as a good rollover/announcement time.  This setting is overridden by config:[general]/rolloverTime.
-rolloverLocalTime="0900"
 
 def divOrdinal(intStr):
 	match = re.search(r'\d+',intStr)
@@ -539,13 +539,12 @@ def main():
 	else:
 		config.readfp(open(configFN))
 
-	global rolloverLocalTime
 	try:
-		rolloverLocalTime = config.get("general","rolloverTime")
+		configRolloverTime = config.get("general","rolloverTime")
+		intRolloverLocalTime = int(configRolloverTime,base=10)
 	except Exception:
-		pass
+		intRolloverLocalTime = int(defaultRolloverTime,base=10)
 	
-	intRolloverLocalTime = int(rolloverLocalTime,base=10)
 	todayDT = datetime.now() - timedelta(minutes=((intRolloverLocalTime/100)*60+(intRolloverLocalTime%100)))
 	todayStr = todayDT.strftime("%Y-%m-%d")
 
