@@ -591,10 +591,8 @@ def main():
 		persistDict = {}
 
 	if "todayStr" not in persistDict or ("todayStr" in persistDict and persistDict["todayStr"] != todayStr):
-		persistDict.pop("results",None)
-		persistDict.pop("teamIdDir",None)	# should fetch this regularly... once a day seems more than enough
-		persistDict.pop("announce",None)
-		persistDict.pop("underway",None)
+		for k in ("results","teamIdDir","announce","underway","upcoming"):
+			persistDict.pop(k,None)
 		firstOfTheDay = True
 			
 	persistDict["todayStr"] = todayStr
