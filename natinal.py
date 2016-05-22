@@ -23,19 +23,9 @@ from os import sys
 
 import notifiers
 
-parser = argparse.ArgumentParser()
-parser.add_argument("-c","--config")
-parser.add_argument("-f","--file")
-args = parser.parse_args()
-
-configFN = "config.ini"
-
-if args.config:
-	configFN = args.config
-	print "running as config: " + configFN
-masterScoreboardOverride = args.file
-
 logLevel = logging.INFO		# .DEBUG
+configFN = "config.ini"		# may be overridden by -c fn.ini
+
 
 teamDirectoryUrl = "http://mlb.com/lookup/xml/named.team_all.bam?sport_code=%27mlb%27&active_sw=%27Y%27&all_star_sw=%27N%27"
 # http://mlb.mlb.com/properties/mlb_properties.xml is a less-good alternate
@@ -535,9 +525,20 @@ def gameProbablesNull(game):
 
 def main():
 
+	parser = argparse.ArgumentParser()
+	parser.add_argument("-c","--config")
+	parser.add_argument("-f","--file")
+	args = parser.parse_args()
+
+	masterScoreboardOverride = args.file	# == None if not passed, which works
+
 	config = ConfigParser.RawConfigParser()
-	config.readfp(open(configFN))
-	
+	if args.config:
+		print "running as config: " + args.config
+		config.readfp(open(args.config))
+	else:
+		config.readfp(open(configFN))
+
 	global rolloverLocalTime
 	try:
 		rolloverLocalTime = config.get("general","rolloverTime")
