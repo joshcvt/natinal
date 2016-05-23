@@ -521,7 +521,20 @@ def pullStandings(msXML, standingsUrlTemplate, scheduleDT):
 					team["pos"] = str(rank)
 				
 			prev = team
-			
+	
+		# now fill in games up for 1st place
+		firstList = []
+		topGB = 99999.0
+		for team in byDivList[k]:
+			if team["pos"] in ("1","T-1"):
+				firstList.append(team)
+			elif team["gb"] < topGB:
+				topGB = team["gb"]
+		if topGB == 99999.0:
+			topGB = 0.0
+		for team in firstList:
+			team["gb"] = -topGB
+	
 	return byTeam
 
 def hasProbableNames(msXML):
@@ -684,7 +697,8 @@ def main():
 					newFinal["probables"] = "No next game for " + teamId + " currently scheduled."
 				else:
 					newFinal["probables"] = probablesStr
-				newFinal["standings"] = teamId + " currently " + divOrdinal(sTeam["pos"]) + " " + divShortName(sTeam["div"]) + " (" + str(sTeam["gb"]) + " GB)"
+				gbStr = (str(sTeam["gb"]) + " GB") if sTeam["gb"] >= 0.0 else ("+" + str(-sTeam["gb"]) + " GA")
+				newFinal["standings"] = teamId + " currently " + divOrdinal(sTeam["pos"]) + " " + divShortName(sTeam["div"]) + " (" + gbStr + ")"
 
 	for vn in validNotifiers:
 		# inherent assumption here: OK to resend whole package on notifier failure 
