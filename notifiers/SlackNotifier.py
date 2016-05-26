@@ -44,9 +44,8 @@ class SlackNotifier(Notifier):
 		for finalDict in newres["finals"]:
 			whereAreHighlights = ""
 				
-			if self.useEasterEggs and re.search("Washington 0",finalDict["final"]):
-				if (random.randint(0,9) == 0):
-					whereAreHighlights = "You're right, Chris, there are no highlights. Screw this. "
+			if self.useEasterEggs and re.search("Washington 0",finalDict["final"]) and (random.randint(0,9) == 0):
+				whereAreHighlights = "You're right, Chris, there are no highlights. Screw this. "
 			elif (self.channels["announce_channel"] != self.channels["highlight_channel"]) and (self.channels["highlight_channel"] != ""):
 				whereAreHighlights = "Highlights in " + self.channels["highlight_channel"] + ". "
 			
