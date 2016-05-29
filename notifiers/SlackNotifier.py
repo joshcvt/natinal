@@ -111,6 +111,9 @@ class SlackNotifier(Notifier):
 					pos = pos + 1
 					if "name" not in player:	# i.e. if JSON not XML
 						player["name"] = player["last_name"] + ", " + player["first_name"][0] + "."
+					elif re.search(r"\, ",player["name"]):
+						player["name"] = player["name"] + "."
+						
 					if pos == 10:
 						# it's a pitcher, not actual batter
 						field["value"] = field["value"] + ("\n_" + player["name"] + " " + player["position"] + "_")
