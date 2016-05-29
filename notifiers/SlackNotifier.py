@@ -99,17 +99,23 @@ class SlackNotifier(Notifier):
 
 		for lineupsList in newres["lineups"]:
 			# home comes first for some reason
-			payloadDict = {"attachments" : [{ "mrkdwn_in":["text","fields"],"text":"*Lineups for " + lineupsList[1]["team_name_full"] + " at " + lineupsList[0]["team_name_full"] + "*", "fallback" : "Lineups set for " + lineupsList[1]["team_file_code"].upper() + " at " + lineupsList[0]["team_file_code"].upper(), "fields" : [] }] }
+			if "team_file_code" in lineupsList[0]:	# JSON
+				lineupsList[0]["team_short"] = lineupsList[0]["team_file_code"].upper()
+				lineupsList[1]["team_short"] = lineupsList[1]["team_file_code"].upper()
+				
+			payloadDict = {"attachments" : [{ "mrkdwn_in":["text","fields"],"text":"*Lineups for " + lineupsList[1]["team_name_full"] + " at " + lineupsList[0]["team_name_full"] + "*", "fallback" : "Lineups set for " + lineupsList[1]["team_short"] + " at " + lineupsList[0]["team_short"], "fields" : [] }] }
 			for tln in reversed(lineupsList): 
-				field = {"short":True, "title":tln["team_file_code"].upper(), "value":""}
+				field = {"short":True, "title":tln["team_short"], "value":""}
 				pos=0
 				for player in tln["players"]:
 					pos = pos + 1
+					if "name" not in player:	# i.e. if JSON not XML
+						player["name"] = player["last_name"] + ", " + player["first_name"][0] + "."
 					if pos == 10:
 						# it's a pitcher, not actual batter
-						field["value"] = field["value"] + ("\n_" + player["last_name"] + ", " + player["first_name"][0] + ". " + player["position"] + "_")
+						field["value"] = field["value"] + ("\n_" + player["name"] + " " + player["position"] + "_")
 					else:
-						field["value"] = field["value"] + ("\n" + player["last_name"] + ", " + player["first_name"][0] + ". " + player["position"])
+						field["value"] = field["value"] + ("\n" + player["name"] + " " + player["position"])
 					
 				field["value"] = re.sub(r"^\n","",field["value"])
 				payloadDict["attachments"][0]["fields"].append(field)

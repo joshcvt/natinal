@@ -45,12 +45,13 @@ standingsJsonUrl = "http://mlb.mlb.com/lookup/json/named.standings_schedule_date
 mlbTvUrl = "http://m.mlb.com/tv/e${calendar_event_id}/"
 mlbAudioUrl = "http://m.mlb.com/tv/e${calendar_event_id}/?media_type=audio&clickOrigin=MSB&team=mlb"
 
-# doesn't exist until the lineups drop
+# don't exist until the lineups drop
 lineupsJsonUrl = "http://mlb.mlb.com/gen/lineups/${game_id}.json"
+boxscoreXmlUrl = "http://gdx.mlb.com/components/game/mlb/year_${year}/month_${month}/day_${day}/${game_id}/boxscore.xml"
 
 # not using yet, but keeping for value
-highlightsOfficialPageTemplate = "http://m.mlb.com/video/v629584083/"
-playResultsByTimecodeUrl = "http://lwsa.mlb.com/tfs/tfs?file=/components/game/mlb/year_2016/month_04/day_30/gid_2016_04_30_wasmlb_slnmlb_1/plays.xml&timecode=20160430_182330"
+# highlightsOfficialPageTemplate = "http://m.mlb.com/video/v629584083/"
+# playResultsByTimecodeUrl = "http://lwsa.mlb.com/tfs/tfs?file=/components/game/mlb/year_2016/month_04/day_30/gid_2016_04_30_wasmlb_slnmlb_1/plays.xml&timecode=20160430_182330"
 # <game inning="1" inning_state="Top"...><score ar="1" hr="0" ah/hh/ae/he...>
 # in mobile.xml, get home tz timecode from <media><keywords><keyword type="sv_id" value="160430_132609"/> ET.CT.MT.MST.PT; can infer UTC diff via msxml: <game time_date_hm_lg="2016/04/30 8:10" time_zone_hm_lg="-4" home_time="5:10" 
 
@@ -64,6 +65,24 @@ UNDERWAY_STATUS_CODES = ["In Progress", "Manager Challenge", "Review"]
 FINAL_STATUS_CODES = ["Final", "Game Over", "Completed Early"]
 ANNOUNCE_STATUS_CODES = ["Delayed Start", "Postponed", "Delayed"]
 
+
+def setupNotifiers(cfgParser):
+	
+	theSet = []
+	# convenience
+	availableNotifiers = {}
+	for nclass in notifiers.NotifierClass.Notifier.__subclasses__():
+		availableNotifiers[nclass.__name__] = nclass
+	
+	heads = cfgParser.get("notifiers","notifiers")
+	for head in heads.split(","):
+		if head != '':
+			try:
+				theSet.append(availableNotifiers[cfgParser.get(head,"class")](cfgParser,head))
+			except Exception as e:
+				logging.error("Notif construction failed for header " + head + "\n" + str(e))
+	
+	return theSet
 
 
 def divOrdinal(intStr):
@@ -86,6 +105,13 @@ def divShortName(teamDiv):
 		
 def stripProbableDate(probStr):
 	return re.sub("\, \d+\/\d+",",",probStr) # remove date, don't need it
+
+def gidizeGameId(gameId):
+	if not re.match("gid_",gameId):
+		gameId = re.sub(r"\-","_",gameId)
+		gameId = re.sub(r"\/","_",gameId)
+		gameId = "gid_" + gameId
+	return gameId
 
 def getScoreline(game):
 	statusElement = game.getElementsByTagName("status")[0]
@@ -158,11 +184,12 @@ def pullHighlights(game, highlightTeamId, baghdadBob, pDict, newResults):
 
 	return (pDict, newResults)
 
-def pullLineups(gameId):
-
+def pullLineups(gameId,jsonUrl):
+	
+	print "NOT RELIABLE FOR HOME/AWAY ORDERING"
 	try:
-		usock = urllib.urlopen(Template(lineupsJsonUrl).substitute(game_id=gameId))
-		logging.debug("pullLineups " + gameId + " " + Template(lineupsJsonUrl).substitute(game_id=gameId) + " fetch HTTP " + str(usock.getcode()))
+		usock = urllib.urlopen(Template(jsonUrl).substitute(game_id=gameId))
+		logging.debug("pullLineups " + gameId + " " + Template(jsonUrl).substitute(game_id=gameId) + " fetch HTTP " + str(usock.getcode()))
 		lineups = json.load(usock)
 		ret = lineups["lineups"]
 		if len(ret[0]["players"]) < 9 or len(ret[1]["players"]) < 9:
@@ -174,6 +201,136 @@ def pullLineups(gameId):
 		logging.debug("pullLineups " + gameId + " exception: " + traceback.format_exc(e))
 		return None
 		
+def pullLineupsXml(gameId,xmlUrl):
+
+	try:
+		# first have to pull YMD from gameId, which is unfortunate.
+		(yr,mo,dy) = re.search(r'(\d{4})\D(\d\d)\D(\d\d).*',gameId).groups()
+		# and if it's not a "gid_" version of gameId, convert it
+		gameId = gidizeGameId(gameId)
+		exactXmlUrl = Template(xmlUrl).substitute(year=yr,month=mo,day=dy,game_id=gameId)
+		logging.debug("getting lineup for " + gameId + " from " + exactXmlUrl)
+		usock = urllib.urlopen(exactXmlUrl)
+		if usock.getcode() != 200:
+			logging.debug("Exiting pullLineupsXml with usock.getcode() == " + usock.getcode())
+			return None
+		boxscoreXml = parse(usock)
+	except Exception, e:
+		logging.debug("Exiting pullLineupsXml with exception " + traceback.format_exc(e))
+		return None
+	
+	bxElem = boxscoreXml.getElementsByTagName("boxscore")[0]
+	
+	lups = [{"team_name_full":bxElem.getAttribute("home_fname"),"team_short":bxElem.getAttribute("home_sname")},
+		{"team_name_full":bxElem.getAttribute("away_fname"),"team_short":bxElem.getAttribute("away_sname")}]
+		
+	# now I have a boxscoreXml, ho ho ho.
+	for team in boxscoreXml.getElementsByTagName("batting"):
+		which = team.getAttribute("team_flag")	# "home" or "away"
+		lup = [1,2,3,4,5,6,7,8,9]	# prepare the array
+		for batter in team.getElementsByTagName("batter"):
+			bo = batter.getAttribute("bo")
+			if bo == "":
+				# DH game pitcher
+				bo = "1000"
+				if lup.len() == 9:
+					lup.append(10)
+			bd = {}
+			bd["name"] = batter.getAttribute("name")
+			bd["position"] = batter.getAttribute("pos")
+			lup[(int(bo)//100)-1] = bd
+		if which == "home":
+			lups[0]["players"] = lup
+		else:
+			lups[1]["players"] = lup
+
+	logging.debug("returning from pullLineupsXml: " + str(lups))
+	return lups
+		
+def pullStandings(msXML, standingsUrlTemplate, scheduleDT):
+	
+	baseStandingsUrl = Template(standingsUrlTemplate).substitute(year=scheduleDT.strftime("%Y"),slashDate=scheduleDT.strftime("%Y/%m/%d"))
+	byTeam = {}
+	byDivList = {}
+	usock = urllib.urlopen(baseStandingsUrl)
+	if usock.getcode() != 200:
+		logging.error("Get base standings failed for standings URL " + baseStandingsUrl)
+		return None
+	# so let's continue
+	try:
+		baseLeagues = json.load(usock)["standings_schedule_date"]["standings_all_date_rptr"]["standings_all_date"]
+	except Exception as e:
+		logging.error("JSON standings get/decode failed for standings URL " + baseStandingsUrl + ", " + traceback.format_exc(e))
+		return None
+	
+	for lg in baseLeagues:
+		lname = ("AL" if lg["league_id"] == "103" else "NL")
+		for team in lg["queryResults"]["row"]:
+			td = {}
+			td["abbrev"] = team["team_abbrev"]
+			td["league"] = lname
+			td["div"] = team["division"]
+			# we'll do pct math ourselves. one of these needs to be a float to do that in Python 2
+			td["w"] = float(team["w"])
+			td["l"] = int(team["l"])
+			td["name"] = team["team_full"]
+			byTeam[team["team_abbrev"]] = td
+	
+	# now it's time to iterate over msXml to update this with current W/L. Yay!
+	for game in msXML.getElementsByTagName("game"):
+		home = game.getAttribute("home_name_abbrev")
+		away = game.getAttribute("away_name_abbrev")
+		byTeam[home]["w"] = float(game.getAttribute("home_win"))
+		byTeam[home]["l"] = int(game.getAttribute("home_loss"))
+		byTeam[away]["w"] = float(game.getAttribute("away_win"))
+		byTeam[away]["l"] = int(game.getAttribute("away_loss"))
+	
+	# and now build byDivList with updated data
+	for team in byTeam:
+		if byTeam[team]["div"] not in byDivList:
+			byDivList[byTeam[team]["div"]] = []
+		byDivList[byTeam[team]["div"]].append(byTeam[team])
+		# this leaves both structures pointing to the same team objects.  this will be useful.
+		
+	for k in sorted(byDivList,key=lambda div: re.sub("Central","Middle",div)): # so we get E/C/W
+	
+		byDivList[k].sort(key=lambda team: ( -team["w"]/(team["w"]+team["l"]), -team["w"]) )
+		firstW = None
+		firstL = None
+		rank = 0
+		for team in byDivList[k]:
+			rank += 1	
+			if firstW == None:
+				firstW = team["w"]
+				firstL = team["l"]
+				team["gb"] = 0.0
+				team["pos"] = str(rank)
+			else:
+				team["gb"] = ((firstW - team["w"]) + (team["l"] - firstL)) / 2
+				if team["gb"] == prev["gb"] and team["w"] == prev["w"]:
+					if not re.match("T-\d",prev["pos"]):
+						prev["pos"] = "T-" + prev["pos"]
+					team["pos"] = prev["pos"]
+				else:
+					team["pos"] = str(rank)
+				
+			prev = team
+	
+		# now fill in games up for 1st place
+		firstList = []
+		topGB = 99999.0
+		for team in byDivList[k]:
+			if team["pos"] in ("1","T-1"):
+				firstList.append(team)
+			elif team["gb"] < topGB:
+				topGB = team["gb"]
+		if topGB == 99999.0:
+			topGB = 0.0
+		for team in firstList:
+			team["gb"] = -topGB
+	
+	return byTeam
+
 def loadMasterScoreboard(msURL, scheduleDT, msOverrideFN=None):
 	
 	if not msOverrideFN:
@@ -238,24 +395,6 @@ def getValidTeams(cfgParser,teamDirUrl,pDict):
 		logging.info("No team[s] requested. Only scanning league results (if that's even been written yet).")
 	return (teams,pDict)
 
-def setupNotifiers(cfgParser):
-	
-	theSet = []
-	# convenience
-	availableNotifiers = {}
-	for nclass in notifiers.NotifierClass.Notifier.__subclasses__():
-		availableNotifiers[nclass.__name__] = nclass
-	
-	heads = cfgParser.get("notifiers","notifiers")
-	for head in heads.split(","):
-		if head != '':
-			try:
-				theSet.append(availableNotifiers[cfgParser.get(head,"class")](cfgParser,head))
-			except Exception as e:
-				logging.error("Notif construction failed for header " + head + "\n" + str(e))
-	
-	return theSet
-
 def rollGames(msXML,teams,baghdadBob,pDict):
 
 	newResults = { "highlights":[],"finals":[],"probables":[],"backtalk":[],"announce":[],"underway":[], "lineups": [] }
@@ -314,7 +453,7 @@ def rollGames(msXML,teams,baghdadBob,pDict):
 			
 			if statusAttr in UPCOMING_STATUS_CODES:
 				if gameId not in pDict["upcoming"]:
-					lineups = pullLineups(gameId)
+					lineups = pullLineupsXml(gameId,boxscoreXmlUrl)
 					if lineups != None:
 						pDict["upcoming"].append(gameId)
 						newResults["lineups"].append(lineups)
@@ -428,7 +567,7 @@ def nextGame(teamId, afterGameDir, xmlList, masterScoreboardUrl=None, maxMoreDay
 			if gameDir == afterGameDir:
 				afterGameDirReached = True
 			if (teamId in (home,away)) and (len(statuses) > 0) and (statuses[0].getAttribute("status") in PREGAME_STATUS_CODES) and (gameDir != afterGameDir) and afterGameDirReached:
-				logging.debug( "next game for " + (afterGameDir if (afterGameDir != None) else "[NONE]") + teamId + " is " + game.getAttribute("game_data_directory"))
+				logging.debug( "next game for " + teamId + (("after " + afterGameDir) if afterGameDir else "") + " is " + game.getAttribute("game_data_directory"))
 				return game
 		
 	return None
@@ -452,90 +591,6 @@ def getProbables(game):
 	runningStr = re.sub(subToken," at ", runningStr)
 	runningStr += (re.sub("^(\d+)\/","",game.getAttribute("time_date")) + " " + game.getAttribute("time_zone"))
 	return runningStr
-
-def pullStandings(msXML, standingsUrlTemplate, scheduleDT):
-	
-	baseStandingsUrl = Template(standingsUrlTemplate).substitute(year=scheduleDT.strftime("%Y"),slashDate=scheduleDT.strftime("%Y/%m/%d"))
-	byTeam = {}
-	byDivList = {}
-	usock = urllib.urlopen(baseStandingsUrl)
-	if usock.getcode() != 200:
-		logging.error("Get base standings failed for standings URL " + baseStandingsUrl)
-		return None
-	# so let's continue
-	try:
-		baseLeagues = json.load(usock)["standings_schedule_date"]["standings_all_date_rptr"]["standings_all_date"]
-	except Exception as e:
-		logging.error("JSON standings get/decode failed for standings URL " + baseStandingsUrl + ", " + traceback.format_exc(e))
-		return None
-	
-	for lg in baseLeagues:
-		lname = ("AL" if lg["league_id"] == "103" else "NL")
-		for team in lg["queryResults"]["row"]:
-			td = {}
-			td["abbrev"] = team["team_abbrev"]
-			td["league"] = lname
-			td["div"] = team["division"]
-			# we'll do pct math ourselves. one of these needs to be a float to do that in Python 2
-			td["w"] = float(team["w"])
-			td["l"] = int(team["l"])
-			td["name"] = team["team_full"]
-			byTeam[team["team_abbrev"]] = td
-	
-	# now it's time to iterate over msXml to update this with current W/L. Yay!
-	for game in msXML.getElementsByTagName("game"):
-		home = game.getAttribute("home_name_abbrev")
-		away = game.getAttribute("away_name_abbrev")
-		byTeam[home]["w"] = float(game.getAttribute("home_win"))
-		byTeam[home]["l"] = int(game.getAttribute("home_loss"))
-		byTeam[away]["w"] = float(game.getAttribute("away_win"))
-		byTeam[away]["l"] = int(game.getAttribute("away_loss"))
-	
-	# and now build byDivList with updated data
-	for team in byTeam:
-		if byTeam[team]["div"] not in byDivList:
-			byDivList[byTeam[team]["div"]] = []
-		byDivList[byTeam[team]["div"]].append(byTeam[team])
-		# this leaves both structures pointing to the same team objects.  this will be useful.
-		
-	for k in sorted(byDivList,key=lambda div: re.sub("Central","Middle",div)): # so we get E/C/W
-	
-		byDivList[k].sort(key=lambda team: ( -team["w"]/(team["w"]+team["l"]), -team["w"]) )
-		firstW = None
-		firstL = None
-		rank = 0
-		for team in byDivList[k]:
-			rank += 1	
-			if firstW == None:
-				firstW = team["w"]
-				firstL = team["l"]
-				team["gb"] = 0.0
-				team["pos"] = str(rank)
-			else:
-				team["gb"] = ((firstW - team["w"]) + (team["l"] - firstL)) / 2
-				if team["gb"] == prev["gb"] and team["w"] == prev["w"]:
-					if not re.match("T-\d",prev["pos"]):
-						prev["pos"] = "T-" + prev["pos"]
-					team["pos"] = prev["pos"]
-				else:
-					team["pos"] = str(rank)
-				
-			prev = team
-	
-		# now fill in games up for 1st place
-		firstList = []
-		topGB = 99999.0
-		for team in byDivList[k]:
-			if team["pos"] in ("1","T-1"):
-				firstList.append(team)
-			elif team["gb"] < topGB:
-				topGB = team["gb"]
-		if topGB == 99999.0:
-			topGB = 0.0
-		for team in firstList:
-			team["gb"] = -topGB
-	
-	return byTeam
 
 def hasProbableNames(msXML):
 	# catch the situation from 2016-05-11 where someone at MLB blanked out all the probables
@@ -635,18 +690,19 @@ def main():
 		if annType not in persistDict:
 			persistDict[annType] = []
 
-	# get master scoreboard DOM doc. Confirms that there are games today too.
-	masterScoreboardXml = loadMasterScoreboard(masterScoreboardUrl,todayDT,masterScoreboardOverride)
-		
 	# load requested teams and sanity-check. if we make it back from this call,  we're good to go forward and have at least one specified team
 	(validTeams,persistDict) = getValidTeams(config,teamDirectoryUrl,persistDict)
 
+	# get master scoreboard DOM doc. Confirms that there are games today too.
+	masterScoreboardXml = loadMasterScoreboard(masterScoreboardUrl,todayDT,masterScoreboardOverride)
+		
 	newResults = {}
 	morningAnnounce = []
 	
 	validNotifiers = setupNotifiers(config)
 
-	if firstOfTheDay:
+	if firstOfTheDay and masterScoreboardXml:
+		standings = pullStandings(masterScoreboardXml,standingsJsonUrl,todayDT)
 		for team in validTeams:
 			try:
 				game = nextGame(team,None,[masterScoreboardXml])
@@ -664,7 +720,7 @@ def main():
 				logging.error("firstOfTheDay failed for " + team + ", " + traceback.format_exc(e))
 		logging.debug("it's firstOfTheDay, morningAnnounce looks like " + str(morningAnnounce))
 	
-	if masterScoreboardXml != None:
+	if masterScoreboardXml:
 		(newResults,persistDict) = rollGames(masterScoreboardXml,validTeams,baghdadBob,persistDict)
 	
 	isNew = False
