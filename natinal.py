@@ -233,7 +233,7 @@ def pullLineupsXml(gameId,xmlUrl):
 			if bo == "":
 				# DH game pitcher
 				bo = "1000"
-				if lup.len() == 9:
+				if len(lup) == 9:
 					lup.append(10)
 			bd = {}
 			bd["name"] = batter.getAttribute("name")
