@@ -425,7 +425,7 @@ def rollGames(msXML,teams,baghdadBob,pDict):
 					# else it's already in
 		
 			# if it's in probables and probables are still relevant:
-			if gameDataDir in pDict["results"]["probables"].keys() and hasProbableNames(msXML):
+			if gameDataDir in pDict["results"]["probables"].keys() and statusAttr not in UNDERWAY_STATUS_CODES and hasProbableNames(msXML):
 				curProbs = getProbables(game,stripDate=True)
 				if curProbs != pDict["results"]["probables"][gameDataDir] and not gameProbablesNull(game):
 					newResults["probables"].append(curProbs)
@@ -558,7 +558,10 @@ def getProbables(game,standings=None,stripDate=False):
 	runningStr = ""
 	subToken = "ZXZXCVCV"
 	for (ptag,cattr) in [("away_probable_pitcher","away_team_city"),("home_probable_pitcher","home_team_city")]:
-		pitcher = game.getElementsByTagName(ptag)[0]
+		try:
+			pitcher = game.getElementsByTagName(ptag)[0]
+		except:
+			return None
 		pstr = pitcher.getAttribute("name_display_roster")
 		if "," in pstr:
 			pstr = pstr + "."
