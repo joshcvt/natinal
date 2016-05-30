@@ -332,7 +332,7 @@ def loadMasterScoreboard(msURL, scheduleDT, msOverrideFN=None):
 		masterScoreboardXml = parse(usock)
 		usock.close()
 	except Exception as e:
-		logging.error("MSXML parse failed on " + (msOverrideFN if msOverrideFn else ("URL:\n\t" + scheduleUrl)) + "\n" + traceback.format_exc(e))
+		logging.error("MSXML parse failed on " + (msOverrideFN if msOverrideFN else ("URL:\n\t" + scheduleUrl)) + "\n" + traceback.format_exc(e))
 		usock.close()
 		return None
 
@@ -672,7 +672,7 @@ def main():
 		if annType not in persistDict:
 			persistDict[annType] = []
 
-	# load requested teams and sanity-check. if we make it back from this call,  we're good to go forward and have at least one specified team
+	# load requested teams and sanity-check. if we make it back from this call, we're good to go forward and have at least one specified team
 	(validTeams,persistDict) = pullValidTeams(config,teamDirectoryUrl,persistDict)
 
 	# get master scoreboard DOM doc. Confirms that there are games today too.
@@ -691,11 +691,12 @@ def main():
 				while game != None:
 					gddir = game.getAttribute("game_data_directory")
 					gameProbs = getProbables(game,stripDate=True)
-					if gameProbs != None and gameProbs != '':
+					if gameProbs and (gameProbs != ''):
 						# put the simple one in pDict, because you'll compare that in rollGames for probables updates
 						persistDict["results"]["probables"][game.getAttribute("game_data_directory")] = gameProbs
-						if gameProbs not in morningAnnounce:
-							morningAnnounce.append(gameProbs)
+						gameProbsWithStandings = getProbables(game,standings,stripDate=True)
+						if gameProbsWithStandings not in morningAnnounce:
+							morningAnnounce.append(gameProbsWithStandings)
 					game = nextGame(team,gddir,[masterScoreboardXml])
 			except Exception as e:
 				logging.error("firstOfTheDay failed for " + team + ", " + traceback.format_exc(e))
