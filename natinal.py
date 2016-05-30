@@ -46,7 +46,6 @@ mlbTvUrl = "http://m.mlb.com/tv/e${calendar_event_id}/"
 mlbAudioUrl = "http://m.mlb.com/tv/e${calendar_event_id}/?media_type=audio&clickOrigin=MSB&team=mlb"
 
 # don't exist until the lineups drop
-lineupsJsonUrl = "http://mlb.mlb.com/gen/lineups/${game_id}.json"
 boxscoreXmlUrl = "http://gdx.mlb.com/components/game/mlb/year_${year}/month_${month}/day_${day}/${game_id}/boxscore.xml"
 
 # not using yet, but keeping for value
@@ -103,15 +102,13 @@ def divShortName(teamDiv):
 	except Exception, e:
 		return teamDiv
 		
-def stripProbableDate(probStr):
-	return re.sub("\, \d+\/\d+",",",probStr) # remove date, don't need it
-
 def gidizeGameId(gameId):
 	if not re.match("gid_",gameId):
 		gameId = re.sub(r"\-","_",gameId)
 		gameId = re.sub(r"\/","_",gameId)
 		gameId = "gid_" + gameId
 	return gameId
+
 
 def getScoreline(game):
 	statusElement = game.getElementsByTagName("status")[0]
@@ -183,23 +180,6 @@ def pullHighlights(game, highlightTeamId, baghdadBob, pDict, newResults):
 					logging.error(e)
 
 	return (pDict, newResults)
-
-def pullLineups(gameId,jsonUrl):
-	
-	print "NOT RELIABLE FOR HOME/AWAY ORDERING"
-	try:
-		usock = urllib.urlopen(Template(jsonUrl).substitute(game_id=gameId))
-		logging.debug("pullLineups " + gameId + " " + Template(jsonUrl).substitute(game_id=gameId) + " fetch HTTP " + str(usock.getcode()))
-		lineups = json.load(usock)
-		ret = lineups["lineups"]
-		if len(ret[0]["players"]) < 9 or len(ret[1]["players"]) < 9:
-			logging.debug("pullLineups " + gameId + " bugging out because of lens " + str(len(ret[0])) + " " + str(len(ret[1])) )
-			return None
-		logging.debug("pullLineups " + gameId + "returning successfully")
-		return ret
-	except Exception, e:
-		logging.debug("pullLineups " + gameId + " exception: " + traceback.format_exc(e))
-		return None
 		
 def pullLineupsXml(gameId,xmlUrl):
 
@@ -358,7 +338,7 @@ def loadMasterScoreboard(msURL, scheduleDT, msOverrideFN=None):
 
 	return masterScoreboardXml
 
-def getValidTeams(cfgParser,teamDirUrl,pDict):
+def pullValidTeams(cfgParser,teamDirUrl,pDict):
 	teams = {}
 	strTeams = cfgParser.get("general","teams")
 	for i in strTeams.split(","):
@@ -445,10 +425,10 @@ def rollGames(msXML,teams,baghdadBob,pDict):
 					# else it's already in
 		
 			# if it's in probables and probables are still relevant:
-			if gameDataDir in pDict["results"]["probables"].keys() and hasProbableNames(msXML) and len(game.getElementsByTagName("away_probable_pitcher")) > 0:
-				curProbs = getProbables(game)
+			if gameDataDir in pDict["results"]["probables"].keys() and hasProbableNames(msXML):
+				curProbs = getProbables(game,stripDate=True)
 				if curProbs != pDict["results"]["probables"][gameDataDir] and not gameProbablesNull(game):
-					newResults["probables"].append(stripProbableDate(curProbs))
+					newResults["probables"].append(curProbs)
 					pDict["results"]["probables"][gameDataDir] = curProbs
 			
 			if statusAttr in UPCOMING_STATUS_CODES:
@@ -572,7 +552,7 @@ def nextGame(teamId, afterGameDir, xmlList, masterScoreboardUrl=None, maxMoreDay
 		
 	return None
 
-def getProbables(game):
+def getProbables(game,standings=None,stripDate=False):
 	if game == None:
 		return None
 	runningStr = ""
@@ -590,6 +570,8 @@ def getProbables(game):
 	runningStr = re.sub(subToken+"$",", ",runningStr)
 	runningStr = re.sub(subToken," at ", runningStr)
 	runningStr += (re.sub("^(\d+)\/","",game.getAttribute("time_date")) + " " + game.getAttribute("time_zone"))
+	if stripDate:
+		runningStr = re.sub("\, \d+\/\d+",",",runningStr)
 	return runningStr
 
 def hasProbableNames(msXML):
@@ -691,7 +673,7 @@ def main():
 			persistDict[annType] = []
 
 	# load requested teams and sanity-check. if we make it back from this call,  we're good to go forward and have at least one specified team
-	(validTeams,persistDict) = getValidTeams(config,teamDirectoryUrl,persistDict)
+	(validTeams,persistDict) = pullValidTeams(config,teamDirectoryUrl,persistDict)
 
 	# get master scoreboard DOM doc. Confirms that there are games today too.
 	masterScoreboardXml = loadMasterScoreboard(masterScoreboardUrl,todayDT,masterScoreboardOverride)
@@ -708,13 +690,12 @@ def main():
 				game = nextGame(team,None,[masterScoreboardXml])
 				while game != None:
 					gddir = game.getAttribute("game_data_directory")
-					gameProbs = getProbables(game)
+					gameProbs = getProbables(game,stripDate=True)
 					if gameProbs != None and gameProbs != '':
-						dateStrippedProbs = stripProbableDate(gameProbs) # remove date, don't need it
-						if dateStrippedProbs not in morningAnnounce:
-							morningAnnounce.append(dateStrippedProbs)
-						# now put the raw one in pDict, because you'll compare that later
+						# put the simple one in pDict, because you'll compare that in rollGames for probables updates
 						persistDict["results"]["probables"][game.getAttribute("game_data_directory")] = gameProbs
+						if gameProbs not in morningAnnounce:
+							morningAnnounce.append(gameProbs)
 					game = nextGame(team,gddir,[masterScoreboardXml])
 			except Exception as e:
 				logging.error("firstOfTheDay failed for " + team + ", " + traceback.format_exc(e))
