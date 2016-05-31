@@ -575,6 +575,17 @@ def getProbables(game,standings=None,stripDate=False):
 	runningStr += (re.sub("^(\d+)\/","",game.getAttribute("time_date")) + " " + game.getAttribute("time_zone"))
 	if stripDate:
 		runningStr = re.sub("\, \d+\/\d+",",",runningStr)
+	
+	if standings:
+		sep = "; "
+		sline = ""
+		for abbr in (game.getAttribute("away_name_abbrev"), game.getAttribute("home_name_abbrev")):
+			sTeam = standings[abbr]
+			gbStr = (str(sTeam["gb"]) + " GB") if sTeam["gb"] >= 0.0 else ("+" + str(-sTeam["gb"]) + " GA")
+			sline = sline + sep + abbr + " " + divOrdinal(sTeam["pos"]) + " " + divShortName(sTeam["div"]) + " (" + gbStr + ")"
+		sline = re.sub("^"+sep,"",sline)
+		runningStr = runningStr + "\n" + sline
+	
 	return runningStr
 
 def hasProbableNames(msXML):
