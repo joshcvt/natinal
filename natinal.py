@@ -758,7 +758,7 @@ def main():
 		try:
 			if "staleResults" in persistDict:
 				if vn.header in persistDict["staleResults"]:
-					logging.error("haz a staleResult for " + vn.header + " " + persistDict["staleResults"][vn.header].keys())
+					logging.error("haz a staleResult for " + vn.header + " " + str(persistDict["staleResults"][vn.header]))
 					stillStale = []
 					for rset in persistDict["staleResults"][vn.header]:
 						try:
