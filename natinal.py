@@ -309,6 +309,9 @@ def pullStandings(msXML, standingsUrlTemplate, scheduleDT):
 		for team in firstList:
 			team["gb"] = -topGB
 	
+	for team in byTeam:
+		byTeam[team]["text"] = byTeam[team]["abbrev"] + " " + divOrdinal(byTeam[team]["pos"]) + " " + divShortName(byTeam[team]["div"]) + " (" + ((str(byTeam[team]["gb"]) + " GB") if byTeam[team]["gb"] >= 0.0 else ("+" + str(-byTeam[team]["gb"]) + " GA")) + ")"
+	
 	return byTeam
 
 def loadMasterScoreboard(msURL, scheduleDT, msOverrideFN=None):
@@ -585,9 +588,7 @@ def getProbables(game,standings=None,stripDate=False):
 		sep = "; "
 		sline = ""
 		for abbr in (game.getAttribute("away_name_abbrev"), game.getAttribute("home_name_abbrev")):
-			sTeam = standings[abbr]
-			gbStr = (str(sTeam["gb"]) + " GB") if sTeam["gb"] >= 0.0 else ("+" + str(-sTeam["gb"]) + " GA")
-			sline = sline + sep + abbr + " " + divOrdinal(sTeam["pos"]) + " " + divShortName(sTeam["div"]) + " (" + gbStr + ")"
+			sline = sline + sep + standings[abbr]["text"]
 		sline = re.sub("^"+sep,"",sline)
 		runningStr = runningStr + "\n" + sline
 	
@@ -754,8 +755,9 @@ def main():
 					newFinal["probables"] = "No next game for " + teamId + " currently scheduled."
 				else:
 					newFinal["probables"] = probablesStr
-				gbStr = (str(sTeam["gb"]) + " GB") if sTeam["gb"] >= 0.0 else ("+" + str(-sTeam["gb"]) + " GA")
-				newFinal["standings"] = teamId + " currently " + divOrdinal(sTeam["pos"]) + " " + divShortName(sTeam["div"]) + " (" + gbStr + ")"
+				#gbStr = (str(sTeam["gb"]) + " GB") if sTeam["gb"] >= 0.0 else ("+" + str(-sTeam["gb"]) + " GA")
+				#newFinal["standings"] = teamId + " currently " + divOrdinal(sTeam["pos"]) + " " + divShortName(sTeam["div"]) + " (" + gbStr + ")"
+				newFinal["standings"] = re.sub(r'^(\w+)',r'\g<1> currently',sTeam["text"])
 
 	for vn in validNotifiers:
 		# inherent assumption here: OK to resend whole package on notifier failure 
