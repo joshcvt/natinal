@@ -58,7 +58,7 @@ boxscoreXmlUrl = "http://gdx.mlb.com/components/game/mlb/year_${year}/month_${mo
 BOTH = -99999
 
 INACTIVE_GAME_STATUS_CODES = ["Postponed", "Pre-Game", "Preview", "Warmup"]
-PREGAME_STATUS_CODES = ["Pre-Game", "Preview", "Warmup"]
+PREGAME_STATUS_CODES = ["Pre-Game", "Preview", "Warmup", "Delayed Start"]
 UPCOMING_STATUS_CODES = ["Pre-Game", "Warmup"]
 UNDERWAY_STATUS_CODES = ["In Progress", "Manager Challenge", "Review"]
 FINAL_STATUS_CODES = ["Final", "Game Over", "Completed Early"]
@@ -425,11 +425,16 @@ def rollGames(msXML,teams,baghdadBob,pDict):
 					# else it's already in
 		
 			# if it's in probables and probables are still relevant:
-			if gameDataDir in pDict["results"]["probables"].keys() and statusAttr not in UNDERWAY_STATUS_CODES and hasProbableNames(msXML):
-				curProbs = getProbables(game,stripDate=True)
-				if curProbs != pDict["results"]["probables"][gameDataDir] and not gameProbablesNull(game):
-					newResults["probables"].append(curProbs)
-					pDict["results"]["probables"][gameDataDir] = curProbs
+			if gameDataDir in pDict["results"]["probables"].keys():
+				if statusAttr in UNDERWAY_STATUS_CODES:
+					del pDict["results"]["probables"][gameDataDir]
+				elif statusAttr in PREGAME_STATUS_CODES and not gameProbablesNull(game):
+					# hasProbableNames(msXML) checks whether the whole thing is zeroed
+					# gameProbablesNull(game) checks just this game
+					curProbs = getProbables(game,stripDate=True)
+					if curProbs and pDict["results"]["probables"][gameDataDir] != curProbs:
+						newResults["probables"].append(curProbs)
+						pDict["results"]["probables"][gameDataDir] = curProbs
 			
 			if statusAttr in UPCOMING_STATUS_CODES:
 				if gameId not in pDict["upcoming"]:
@@ -560,9 +565,9 @@ def getProbables(game,standings=None,stripDate=False):
 	for (ptag,cattr) in [("away_probable_pitcher","away_team_city"),("home_probable_pitcher","home_team_city")]:
 		try:
 			pitcher = game.getElementsByTagName(ptag)[0]
+			pstr = pitcher.getAttribute("name_display_roster")
 		except:
 			return None
-		pstr = pitcher.getAttribute("name_display_roster")
 		if "," in pstr:
 			pstr = pstr + "."
 		if pstr == "":
