@@ -432,8 +432,6 @@ def rollGames(msXML,teams,baghdadBob,pDict):
 				if statusAttr in UNDERWAY_STATUS_CODES:
 					del pDict["results"]["probables"][gameDataDir]
 				elif statusAttr in PREGAME_STATUS_CODES and not gameProbablesNull(game):
-					# hasProbableNames(msXML) checks whether the whole thing is zeroed
-					# gameProbablesNull(game) checks just this game
 					curProbs = getProbables(game,stripDate=True)
 					if curProbs and pDict["results"]["probables"][gameDataDir] != curProbs:
 						newResults["probables"].append(curProbs)
@@ -594,13 +592,6 @@ def getProbables(game,standings=None,stripDate=False):
 	
 	return runningStr
 
-def hasProbableNames(msXML):
-	# catch the situation from 2016-05-11 where someone at MLB blanked out all the probables
-	for prob in (msXML.getElementsByTagName("away_probable_pitcher") + msXML.getElementsByTagName("home_probable_pitcher")):
-		if len(prob.getAttribute("last_name")) > 0:
-			return True
-	return False
-
 def gameProbablesNull(game):
 	# check a single probables set -- GH-#3
 	try:
@@ -755,8 +746,6 @@ def main():
 					newFinal["probables"] = "No next game for " + teamId + " currently scheduled."
 				else:
 					newFinal["probables"] = probablesStr
-				#gbStr = (str(sTeam["gb"]) + " GB") if sTeam["gb"] >= 0.0 else ("+" + str(-sTeam["gb"]) + " GA")
-				#newFinal["standings"] = teamId + " currently " + divOrdinal(sTeam["pos"]) + " " + divShortName(sTeam["div"]) + " (" + gbStr + ")"
 				newFinal["standings"] = re.sub(r'^(\w+)',r'\g<1> currently',sTeam["text"])
 
 	for vn in validNotifiers:
