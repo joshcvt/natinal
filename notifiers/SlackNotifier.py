@@ -37,36 +37,38 @@ class SlackNotifier(Notifier):
 		
 	def pushResults(self,newres):
 
-		for (blurb, mp4) in newres["highlights"]:
-			payloadDict = {"text": (blurb + ": [<" + mp4 + "|mp4>]")}
-			self._sendSlack(payloadDict,self.channels["highlight_channel"])
+		if "highlights" in newres:
+			for (blurb, mp4) in newres["highlights"]:
+				payloadDict = {"text": (blurb + ": [<" + mp4 + "|mp4>]")}
+				self._sendSlack(payloadDict,self.channels["highlight_channel"])
 
-		for finalDict in newres["finals"]:
-			whereAreHighlights = ""
+		if "finals" in newres:
+			for finalDict in newres["finals"]:
+				whereAreHighlights = ""
 				
-			if self.useEasterEggs and re.search("Washington 0",finalDict["final"]) and (random.randint(0,9) == 0):
-				whereAreHighlights = "You're right, Chris, there are no highlights. Screw this. "
-			elif (self.channels["announce_channel"] != self.channels["highlight_channel"]) and (self.channels["highlight_channel"] != ""):
-				whereAreHighlights = "Highlights in " + self.channels["highlight_channel"] + ". "
+				if self.useEasterEggs and re.search("Washington 0",finalDict["final"]) and (random.randint(0,9) == 0):
+					whereAreHighlights = "You're right, Chris, there are no highlights. Screw this. "
+				elif (self.channels["announce_channel"] != self.channels["highlight_channel"]) and (self.channels["highlight_channel"] != ""):
+					whereAreHighlights = "Highlights in " + self.channels["highlight_channel"] + ". "
 			
-			payloadDict = {"text": "*"+finalDict["final"]+".* "+whereAreHighlights+finalDict["standings"], "link_names" : 1}
+				payloadDict = {"text": "*"+finalDict["final"]+".* "+whereAreHighlights+finalDict["standings"], "link_names" : 1}
 			
-			if self.useEasterEggs: # and re.search("Washington",finalDict["final"]):
-				if finalDict["result"] == "loss":
-					payloadDict["icon_emoji"] = ":l:"
-					if len(self.lossgifs) > 0:
-						payloadDict["attachments"] = [{"fallback": "LOSS [GIF]", "image_url": self.lossgifs[random.randint(1,len(self.lossgifs))-1]}]
-				elif finalDict["result"] == "win":
-					payloadDict["icon_emoji"] = ":w:"
-					if len(self.wingifs) > 0:
-						payloadDict["attachments"] = [{"fallback": "WIN! [GIF]", "image_url": self.wingifs[random.randint(1,len(self.wingifs))-1]}]
+				if self.useEasterEggs: # and re.search("Washington",finalDict["final"]):
+					if finalDict["result"] == "loss":
+						payloadDict["icon_emoji"] = ":l:"
+						if len(self.lossgifs) > 0:
+							payloadDict["attachments"] = [{"fallback": "LOSS [GIF]", "image_url": self.lossgifs[random.randint(1,len(self.lossgifs))-1]}]
+					elif finalDict["result"] == "win":
+						payloadDict["icon_emoji"] = ":w:"
+						if len(self.wingifs) > 0:
+							payloadDict["attachments"] = [{"fallback": "WIN! [GIF]", "image_url": self.wingifs[random.randint(1,len(self.wingifs))-1]}]
 				
-				self._sendSlack(payloadDict,self.channels["announce_channel"])
-				self._sendSlack({"link_names":1,"text":"Next: "+finalDict["probables"]}, self.channels["announce_channel"])
+					self._sendSlack(payloadDict,self.channels["announce_channel"])
+					self._sendSlack({"link_names":1,"text":"Next: "+finalDict["probables"]}, self.channels["announce_channel"])
 
-			else:
-				payloadDict["text"] = payloadDict["text"] + "\nNext: "+finalDict["probables"]
-				self._sendSlack(payloadDict,self.channels["announce_channel"])			
+				else:
+					payloadDict["text"] = payloadDict["text"] + "\nNext: "+finalDict["probables"]
+					self._sendSlack(payloadDict,self.channels["announce_channel"])			
 
 		if "backtalk" in newres.keys():
 			for backtalk in newres["backtalk"]:
@@ -85,44 +87,48 @@ class SlackNotifier(Notifier):
 			payloadDict = {"text":text}
 			self._sendSlack(payloadDict,self.channels["announce_channel"])
 
-		for prob in newres["probables"]:
-			payloadDict = {"text":"*PROBABLES UPDATE:* " + prob}
-			self._sendSlack(payloadDict,self.channels["announce_channel"])
-		for ann in newres["announce"]:
-			payloadDict = {"text":"*GAME STATUS UPDATE:* " + ann}
-			self._sendSlack(payloadDict,self.channels["announce_channel"])
-		for underwayDict in newres["underway"]:
-			payloadDict = { "text": "*" + underwayDict["game"] + " now underway: <" + underwayDict["audio"] + "|radio> / <" + underwayDict["video"] + "|TV>*" }
-			if "foxExclusive" in underwayDict and underwayDict["foxExclusive"]:
-				payloadDict["text"] = payloadDict["text"] + "\n_This game is a Fox TV exclusive; video highlights may not be available until postgame._"
-			self._sendSlack(payloadDict,self.channels["announce_channel"])
+		if "probables" in newres:
+			for prob in newres["probables"]:
+				payloadDict = {"text":"*PROBABLES UPDATE:* " + prob}
+				self._sendSlack(payloadDict,self.channels["announce_channel"])
+		if "announce" in newres:
+			for ann in newres["announce"]:
+				payloadDict = {"text":"*GAME STATUS UPDATE:* " + ann}
+				self._sendSlack(payloadDict,self.channels["announce_channel"])
+		if "underway" in newres:
+			for underwayDict in newres["underway"]:
+				payloadDict = { "text": "*" + underwayDict["game"] + " now underway: <" + underwayDict["audio"] + "|radio> / <" + underwayDict["video"] + "|TV>*" }
+				if "foxExclusive" in underwayDict and underwayDict["foxExclusive"]:
+					payloadDict["text"] = payloadDict["text"] + "\n_This game is a Fox TV exclusive; video highlights may not be available until postgame._"
+				self._sendSlack(payloadDict,self.channels["announce_channel"])
 
-		for lineupsList in newres["lineups"]:
-			# home comes first for some reason
-			if "team_file_code" in lineupsList[0]:	# JSON
-				lineupsList[0]["team_short"] = lineupsList[0]["team_file_code"].upper()
-				lineupsList[1]["team_short"] = lineupsList[1]["team_file_code"].upper()
+		if "lineups" in newres:
+			for lineupsList in newres["lineups"]:
+				# home comes first for some reason
+				if "team_file_code" in lineupsList[0]:	# JSON
+					lineupsList[0]["team_short"] = lineupsList[0]["team_file_code"].upper()
+					lineupsList[1]["team_short"] = lineupsList[1]["team_file_code"].upper()
 				
-			payloadDict = {"attachments" : [{ "mrkdwn_in":["text","fields"],"text":"*Lineups for " + lineupsList[1]["team_name_full"] + " at " + lineupsList[0]["team_name_full"] + "*", "fallback" : "Lineups set for " + lineupsList[1]["team_short"] + " at " + lineupsList[0]["team_short"], "fields" : [] }] }
-			for tln in reversed(lineupsList): 
-				field = {"short":True, "title":tln["team_short"], "value":""}
-				pos=0
-				for player in tln["players"]:
-					pos = pos + 1
-					if "name" not in player:	# i.e. if JSON not XML
-						player["name"] = player["last_name"] + ", " + player["first_name"][0] + "."
-					elif re.search(r"\, ",player["name"]):
-						player["name"] = player["name"] + "."
+				payloadDict = {"attachments" : [{ "mrkdwn_in":["text","fields"],"text":"*Lineups for " + lineupsList[1]["team_name_full"] + " at " + lineupsList[0]["team_name_full"] + "*", "fallback" : "Lineups set for " + lineupsList[1]["team_short"] + " at " + lineupsList[0]["team_short"], "fields" : [] }] }
+				for tln in reversed(lineupsList): 
+					field = {"short":True, "title":tln["team_short"], "value":""}
+					pos=0
+					for player in tln["players"]:
+						pos = pos + 1
+						if "name" not in player:	# i.e. if JSON not XML
+							player["name"] = player["last_name"] + ", " + player["first_name"][0] + "."
+						elif re.search(r"\, ",player["name"]):
+							player["name"] = player["name"] + "."
 						
-					if pos == 10:
-						# it's a pitcher, not actual batter
-						field["value"] = field["value"] + ("\n_" + player["name"] + " " + player["position"] + "_")
-					else:
-						field["value"] = field["value"] + ("\n" + player["name"] + " " + player["position"])
+						if pos == 10:
+							# it's a pitcher, not actual batter
+							field["value"] = field["value"] + ("\n_" + player["name"] + " " + player["position"] + "_")
+						else:
+							field["value"] = field["value"] + ("\n" + player["name"] + " " + player["position"])
 					
-				field["value"] = re.sub(r"^\n","",field["value"])
-				payloadDict["attachments"][0]["fields"].append(field)
-			self._sendSlack(payloadDict,self.channels["lineups_channel"])
+					field["value"] = re.sub(r"^\n","",field["value"])
+					payloadDict["attachments"][0]["fields"].append(field)
+				self._sendSlack(payloadDict,self.channels["lineups_channel"])
 		
 	
 	def _sendSlack(self,payloadDict,channel=None):
