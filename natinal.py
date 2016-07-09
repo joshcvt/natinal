@@ -492,8 +492,8 @@ def rollGames(msXML,teams,baghdadBob,pDict):
 				
 				logging.debug(statusStr)
 				if gameDataDir not in pDict["results"]["finals"].keys():
-					pDict["results"]["finals"][gameDataDir] = (gameDataDir, statusStr)
-					finalDict = {"gamedir":gameDataDir,"final":statusStr}
+					pDict["results"]["finals"][gameDataDir] = (gameDataDir, statusStr, datetime.strftime(datetime.utcnow(),"%c"))
+					finalDict = {"gamedir":gameDataDir,"final":statusStr,"reportTime":datetime.utcnow()}
 					
 					if highlightTeamId == BOTH:
 						finalDict["relevantteams"] = [home,away]
