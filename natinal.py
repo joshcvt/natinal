@@ -493,7 +493,7 @@ def rollGames(msXML,teams,baghdadBob,pDict):
 				logging.debug(statusStr)
 				if gameDataDir not in pDict["results"]["finals"].keys():
 					pDict["results"]["finals"][gameDataDir] = (gameDataDir, statusStr, datetime.strftime(datetime.utcnow(),"%c"))
-					finalDict = {"gamedir":gameDataDir,"final":statusStr,"reportTime":datetime.utcnow()}
+					finalDict = {"gamedir":gameDataDir,"final":statusStr,"reportTime":datetime.strftime(datetime.utcnow(),"%c")}
 					
 					if highlightTeamId == BOTH:
 						finalDict["relevantteams"] = [home,away]
@@ -779,4 +779,5 @@ def main():
 		json.dump(persistDict,file(persistFN,'w'),indent=2)
 	except TypeError as e:
 		# dumps will trip this, keeping us from blowing away the persistFN
-		logging.error("persistDict failed serialization. what's up? " + traceback.format_exc(e) + ", Dict: " + persistDict.toString())
+		logging.error("persistDict failed serialization. what's up? " + traceback.format_exc(e))
+		logging.error(persistDict)
