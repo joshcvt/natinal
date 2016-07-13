@@ -260,10 +260,11 @@ def pullStandings(msXML, standingsUrlTemplate, scheduleDT):
 	for game in msXML.getElementsByTagName("game"):
 		home = game.getAttribute("home_name_abbrev")
 		away = game.getAttribute("away_name_abbrev")
-		byTeam[home]["w"] = float(game.getAttribute("home_win"))
-		byTeam[home]["l"] = int(game.getAttribute("home_loss"))
-		byTeam[away]["w"] = float(game.getAttribute("away_win"))
-		byTeam[away]["l"] = int(game.getAttribute("away_loss"))
+		if (home not in ('AL','NL')):	# catch All-Star Game special case
+			byTeam[home]["w"] = float(game.getAttribute("home_win"))
+			byTeam[home]["l"] = int(game.getAttribute("home_loss"))
+			byTeam[away]["w"] = float(game.getAttribute("away_win"))
+			byTeam[away]["l"] = int(game.getAttribute("away_loss"))
 	
 	# and now build byDivList with updated data
 	for team in byTeam:
