@@ -37,6 +37,8 @@ teamDirectoryUrl = "http://mlb.com/lookup/xml/named.team_all.bam?sport_code=%27m
 leagueAgnosticMasterScoreboardUrl = "http://gdx.mlb.com/gdcross/components/game/LEAGUEBLOCK/year_%Y/month_%m/day_%d/master_scoreboard.xml"
 validLeagues = ["mlb","aaa","aax","afa","afx","asx","rok"]
 
+LEAGUE_GAMES = 162	# obvs this has to be refactored if we ever do MiLB
+
 # doesn't exist until the game starts
 mobileHighlightsUrl = "http://gdx.mlb.com/gdcross${game_data_directory}/media/mobile.xml" 
 
@@ -279,6 +281,8 @@ def pullStandings(msXML, standingsUrlTemplate, scheduleDT):
 		firstW = None
 		firstL = None
 		rank = 0
+		
+		# do GB and position
 		for team in byDivList[k]:
 			rank += 1	
 			if firstW == None:
@@ -309,9 +313,18 @@ def pullStandings(msXML, standingsUrlTemplate, scheduleDT):
 			topGB = 0.0
 		for team in firstList:
 			team["gb"] = -topGB
-	
+			
+		# start populating magic number at 81 games in for first-place
+		if ((byDivList[k][0]["w"] + byDivList[k][0]["l"]) >= (LEAGUE_GAMES/2)):
+			byDivList[k][0]["magic"] = (LEAGUE_GAMES+1) - (byDivList[k][0]["w"] + byDivList[k][1]["l"])
+			for ln in range(1,len(byDivList[k])):
+				if byDivList[k][ln]["pos"] == "T-1":
+					byDivList[k][ln]["magic"] = (LEAGUE_GAMES+1) - (byDivList[k][ln]["w"] + byDivList[k][0]["l"])
+
 	for team in byTeam:
 		byTeam[team]["text"] = byTeam[team]["abbrev"] + " " + divOrdinal(byTeam[team]["pos"]) + " " + divShortName(byTeam[team]["div"]) + " (" + ((str(byTeam[team]["gb"]) + " GB") if byTeam[team]["gb"] >= 0.0 else ("+" + str(-byTeam[team]["gb"]) + " GA")) + ")"
+		if "magic" in byTeam[team]:
+			byTeam[team]["text"] = byTeam[team]["text"] + ", magic number: " + str(int(byTeam[team]["magic"]))
 	
 	return byTeam
 
