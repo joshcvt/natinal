@@ -324,7 +324,10 @@ def pullStandings(msXML, standingsUrlTemplate, scheduleDT):
 	for team in byTeam:
 		byTeam[team]["text"] = byTeam[team]["abbrev"] + " " + divOrdinal(byTeam[team]["pos"]) + " " + divShortName(byTeam[team]["div"]) + " (" + ((str(byTeam[team]["gb"]) + " GB") if byTeam[team]["gb"] >= 0.0 else ("+" + str(-byTeam[team]["gb"]) + " GA")) + ")"
 		if "magic" in byTeam[team]:
-			byTeam[team]["text"] = byTeam[team]["text"] + ", magic number: " + str(int(byTeam[team]["magic"]))
+			if byTeam[team]["magic"] > 0:
+				byTeam[team]["text"] = byTeam[team]["text"] + ", magic number: " + str(int(byTeam[team]["magic"]))
+			else:
+				byTeam[team]["text"] = byTeam[team]["text"] + ", CLINCHED"
 	
 	return byTeam
 
