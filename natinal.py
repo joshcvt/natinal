@@ -278,64 +278,26 @@ def pullStandings(msXML, standingsUrlTemplate, scheduleDT):
 			byLeagueList[byTeam[team]["league"]] = []
 		byLeagueList[byTeam[team]["league"]].append(byTeam[team])
 		# this leaves the structures pointing to the same team objects.  this will be useful.
-	
-	if (0 == 1):	
-		for k in sorted(byDivList,key=lambda div: re.sub("Central","Middle",div)): # so we get E/C/W
-	
-			byDivList[k].sort(key=lambda team: ( -team["w"]/(team["w"]+team["l"]), -team["w"]) )
-			firstW = None
-			firstL = None
-			rank = 0
 		
-			# do GB and position
-			for team in byDivList[k]:
-				rank += 1	
-				if firstW == None:
-					firstW = team["w"]
-					firstL = team["l"]
-					team["gb"] = 0.0
-					team["pos"] = str(rank)
-				else:
-					team["gb"] = ((firstW - team["w"]) + (team["l"] - firstL)) / 2
-					if team["gb"] == prev["gb"] and team["w"] == prev["w"]:
-						if not re.match("T-\d",prev["pos"]):
-							prev["pos"] = "T-" + prev["pos"]
-						team["pos"] = prev["pos"]
-					else:
-						team["pos"] = str(rank)
-				
-				prev = team
-	
-			# now fill in games up for 1st place
-			firstList = []
-			topGB = 99999.0
-			for team in byDivList[k]:
-				if team["pos"] in ("1","T-1"):
-					firstList.append(team)
-				elif team["gb"] < topGB:
-					topGB = team["gb"]
-			if topGB == 99999.0:
-				topGB = 0.0
-			for team in firstList:
-				team["gb"] = -topGB
-			
-			# start populating magic number at 81 games in for first-place
-			if ((byDivList[k][0]["w"] + byDivList[k][0]["l"]) >= (LEAGUE_GAMES/2)):
-				byDivList[k][0]["magic"] = (LEAGUE_GAMES+1) - (byDivList[k][0]["w"] + byDivList[k][1]["l"])
-				for ln in range(1,len(byDivList[k])):
-					if byDivList[k][ln]["pos"] == "T-1":
-						byDivList[k][ln]["magic"] = (LEAGUE_GAMES+1) - (byDivList[k][ln]["w"] + byDivList[k][0]["l"])
-	
 	byDivList = doStandingsMagic(byDivList)
 
+	byLeagueList = doStandingsMagic(byLeagueList,"league")
+	
 	for team in byTeam:
+		if team == "WSH":
+			print byTeam[team]
 		byTeam[team]["text"] = byTeam[team]["abbrev"] + " " + divOrdinal(byTeam[team]["pos"]) + " " + divShortName(byTeam[team]["div"]) + " (" + ((str(byTeam[team]["gb"]) + " GB") if byTeam[team]["gb"] >= 0.0 else ("+" + str(-byTeam[team]["gb"]) + " GA")) + ")"
 		if "magic" in byTeam[team]:
 			if byTeam[team]["magic"] > 0:
 				byTeam[team]["text"] = byTeam[team]["text"] + ", magic number: " + str(int(byTeam[team]["magic"]))
 			else:
 				byTeam[team]["text"] = byTeam[team]["text"] + ", CLINCHED"
-	
+		if "leaguemagic" in byTeam[team]:
+			if byTeam[team]["leaguemagic"] > 0:
+				byTeam[team]["text"] = byTeam[team]["text"] + ", league magic number: " + str(int(byTeam[team]["leaguemagic"]))
+			else:
+				byTeam[team]["text"] = byTeam[team]["text"] + ", CLINCHED LEAGUE"
+				
 	return byTeam
 
 def doStandingsMagic(byDivList,prefix=""):
