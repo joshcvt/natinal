@@ -284,8 +284,6 @@ def pullStandings(msXML, standingsUrlTemplate, scheduleDT):
 	byLeagueList = doStandingsMagic(byLeagueList,"league")
 	
 	for team in byTeam:
-		if team == "WSH":
-			print byTeam[team]
 		byTeam[team]["text"] = byTeam[team]["abbrev"] + " " + divOrdinal(byTeam[team]["pos"]) + " " + divShortName(byTeam[team]["div"]) + " (" + ((str(byTeam[team]["gb"]) + " GB") if byTeam[team]["gb"] >= 0.0 else ("+" + str(-byTeam[team]["gb"]) + " GA")) + ")"
 		if "magic" in byTeam[team]:
 			if byTeam[team]["magic"] > 0:
