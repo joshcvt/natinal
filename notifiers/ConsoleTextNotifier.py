@@ -18,7 +18,10 @@ class ConsoleTextNotifier(Notifier):
 		for (blurb, mp4) in newres["highlights"]:
 			print(blurb + ": " + mp4)
 		for finalDict in newres["finals"]:
-			print finalDict["final"] + ", " + finalDict["standings"]
+			textOut = finalDict["final"]
+			if finalDict["standings"] and (finalDict["standings"] != ""):
+				textOut += ", " + finalDict["standings"]
+			print textOut
 			print "Next: "+finalDict["probables"]
 		for underwayDict in newres["underway"]:
 			print underwayDict["game"] + " now underway. Radio: " + underwayDict["audio"] + ", TV: " + underwayDict["video"]

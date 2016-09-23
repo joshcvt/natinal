@@ -375,6 +375,12 @@ def loadMasterScoreboard(msURL, scheduleDT, msOverrideFN=None):
 
 	return masterScoreboardXml
 
+def isRegularSeason(msXML):
+	# we want to bomb out if *any* game is not RS.
+	for game in msXML.getElementsByTagName("game"):
+		if game.getAttribute("game_type") != "R":
+			return False
+	return True
 
 def pullValidTeams(cfgParser,teamDirUrl,pDict):
 	teams = {}
@@ -730,7 +736,10 @@ def main():
 	validNotifiers = setupNotifiers(config)
 
 	if firstOfTheDay and masterScoreboardXml:
-		standings = pullStandings(masterScoreboardXml,standingsJsonUrl,todayDT)
+		if isRegularSeason(masterScoreboardXml):
+			standings = pullStandings(masterScoreboardXml,standingsJsonUrl,todayDT)
+		else:
+			standings = None
 		for team in validTeams:
 			try:
 				game = nextGame(team,None,[masterScoreboardXml])
@@ -773,15 +782,18 @@ def main():
 		for newFinal in newResults["finals"]:
 			if tomorrowScoreboardXml == None:
 				tomorrowScoreboardXml = loadMasterScoreboard(masterScoreboardUrl,(todayDT + timedelta(days=1)))
-				standings = pullStandings(masterScoreboardXml,standingsJsonUrl,todayDT)
+				if isRegularSeason(masterScoreboardXml):
+					standings = pullStandings(masterScoreboardXml,standingsJsonUrl,todayDT)
 			for teamId in newFinal["relevantteams"]:
 				probablesStr = getProbables(nextGame(teamId,newFinal["gamedir"],[masterScoreboardXml,tomorrowScoreboardXml],masterScoreboardUrl,6))
-				sTeam = standings[teamId]
 				if probablesStr == None:
 					newFinal["probables"] = "No next game for " + teamId + " currently scheduled."
 				else:
 					newFinal["probables"] = probablesStr
-				newFinal["standings"] = re.sub(r'^(\w+)',r'\g<1> currently',sTeam["text"])
+				if standings:
+					newFinal["standings"] = re.sub(r'^(\w+)',r'\g<1> currently',standings[teamId]["text"])
+				else:
+					newFinal["standings"] = ""
 
 	for vn in validNotifiers:
 		# inherent assumption here: OK to resend whole package on notifier failure 
