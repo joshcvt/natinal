@@ -26,6 +26,10 @@ class TwitterNotifier(Notifier):
 		except:
 			self.wintext = ""
 		try:
+			self.losstext = cfgParser.get(insec,"wintext").strip()
+		except:
+			self.losstext = ""
+		try:
 			self.gamelink = cfgParser.getboolean(insec,"link")
 		except:
 			self.gamelink = False
@@ -42,21 +46,26 @@ class TwitterNotifier(Notifier):
 			for finalDict in newres["finals"]:
 				if "result" in finalDict:
 					if (finalDict["result"] == "win" and "win" in self.tweeton):
-						if (self.scoretext == "before"):
-							msg = finalDict["final"] + ". " + self.wintext
-							if self.gamelink:
-								msg += " " + "GAMELINK"
-						else:
-							msg = self.wintext
-							if self.gamelink:
-								msg += "GAMELINK" + " "
-							msg += finalDict["final"]
-						self._tweet(msg)
-							
+						restext = self.wintext
+					elif (finalDict["result"] == "loss" and "loss" in self.tweeton):
+						restext = self.losstext
+					else:
+						restext = "TIE GAME (somehow)"
+					
+					if (self.scoretext == "before"):
+						msg = finalDict["final"] + ". " + restext
+						if self.gamelink:
+							msg += " " + "GAMELINK"
+					else:
+						msg = restext
+						if self.gamelink:
+							msg += "GAMELINK" + " "
+						msg += finalDict["final"]
+					
+					self._tweet(msg)
 					
 	def _tweet(self,message):
 		api = twitter.Api(consumer_key=self.conskey, consumer_secret=self.conssecret,
-			access_token_key=self.acctokenkey, access_token_secret=self.acctokensecret)				
-		#print "got api, waiting"
+			access_token_key=self.acctokenkey, access_token_secret=self.acctokensecret)	
 		api.PostUpdate(message)
 		
