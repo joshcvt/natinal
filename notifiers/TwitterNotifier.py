@@ -26,7 +26,7 @@ class TwitterNotifier(Notifier):
 		except:
 			self.wintext = ""
 		try:
-			self.losstext = cfgParser.get(insec,"wintext").strip()
+			self.losstext = cfgParser.get(insec,"losstext").strip()
 		except:
 			self.losstext = ""
 		try:
