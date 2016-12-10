@@ -1,9 +1,13 @@
-teamDirectoryUrl = "http://mlb.com/lookup/xml/named.team_all.bam?sport_code=%27mlb%27&active_sw=%27Y%27&all_star_sw=%27N%27"
+
+leagueAgnosticTeamDirectoryUrl = "http://mlb.com/lookup/xml/named.team_all.bam?sport_code=%27{league}%27&active_sw=%27Y%27&all_star_sw=%27N%27"
 # http://mlb.mlb.com/properties/mlb_properties.xml is a less-good alternate
+
+# just do this so we don't have to rework the bot
+teamDirectoryUrl = leagueAgnosticTeamDirectoryUrl.replace("{league}","mlb")
 
 # exists unless there are no games scheduled that day
 leagueAgnosticMasterScoreboardUrl = "http://gdx.mlb.com/gdcross/components/game/LEAGUEBLOCK/year_%Y/month_%m/day_%d/master_scoreboard.xml"
-validLeagues = ["mlb","aaa","aax","afa","afx","asx","rok"]
+validLeagues = ["mlb","aaa","aax","afa","afx","asx","rok"] # in descending order
 
 
 # doesn't exist until the game starts

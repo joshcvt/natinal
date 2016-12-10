@@ -8,27 +8,30 @@ from consts import *
 
 # http://mlb.com/lookup/xml/named.schedule_team_sponsors.bam?start_date=%272017/03/01%27&end_date=%272017/11/30%27&team_id=119&season=2017&game_type=%27R%27&game_type=%27A%27&game_type=%27E%27&game_type=%27F%27&game_type=%27D%27&game_type=%27L%27&game_type=%27W%27&game_type=%27C%27
 # http://mlb.com/lookup/xml/named.schedule_team_sponsors.bam?start_date=%272016/03/01%27&end_date=%272016/11/30%27&team_id=119&season=2016&game_type=%27R%27&game_type=%27A%27&game_type=%27E%27&game_type=%27F%27&game_type=%27D%27&game_type=%27L%27&game_type=%27W%27&game_type=%27C%27
-# inside schedule_team_complete: adding game_type S gives you exhibitions. R is regular season for sure
+# schedule_team_complete: game_type S is exhibition; R regular season; D division; L league; W World Series; A ASG (in schedule_xref only)
 # schedule_xref has one row for ASG
-# schedule_sponsors has nothing #FORNOW
+# schedule_sponsors is individual gameday sponsors if set.
 # schedule_nongame has rows for spring training games with a different schema
 
 def loadLeagues():
 	leagues = {}
 	for league in validLeagues:	# note, a "league" is actually a classification here
-		print("loading class " + league)
-		dirUrl = teamDirectoryUrl.replace("27mlb","27"+league) # so it doesn't replace the mlb in the hostname
+		dirUrl = leagueAgnosticTeamDirectoryUrl.replace("{league}",league) 
+		logging.debug("loading class " + league + " from " + dirUrl)
 		usock = urllib.urlopen(dirUrl)
 		if usock.getcode() != 200:
 			logging.error("Get teamdir failed for league " + league + " on " + dirUrl)
 			return None
 		# so let's continue
 		leagues[league] = {}
+		teams = {}
 		try:
 			dirTree = parse(usock)
 			for row in dirTree.getElementsByTagName("row"):
 				rowDict = dict(row.attributes.items())
-				leagues[league][rowDict["name_short"]] = rowDict
+				# team_id and team_code are unique. name_abbrev is not even unique within classifications: COL for Columbus and Colorado Springs AAA
+				leagues[league][rowDict["team_id"]] = rowDict
+				teams[rowDict["team_id"]] = rowDict
 		except Exception as e:
 			logging.error("XML directory get/decode failed for dir URL " + dir + ", " + traceback.format_exc(e))
 			return None
@@ -36,7 +39,7 @@ def loadLeagues():
 	return leagues
 
 leagues = loadLeagues()
-#print json.dumps(leagues["rok"], indent=2)
+#print json.dumps(leagues["afa"], indent=2)
 #print leagues
 
 teamRowXml = """<row team_id="3712" team_code="bca" file_code="t3712" franchise_code="" bis_team_code="" name_abbrev="BC" name_display_brief="Astros" name_display_short="Buies Creek" name_display_full="Buies Creek Astros" name_display_long="Buies Creek Astros" division_id="211" division="S" division_abbrev="CARS" division_full="Carolina League Southern" league_id="122" league="CAR" league_abbrev="CAR" league_full="Carolina League" sport_id="13" sport_code="afa" sport_abbrev="A (Adv)" sport_full="Class A Advanced" mlb_org_id="117" mlb_org_abbrev="HOU" mlb_org_brief="Astros" mlb_org_short="Houston" mlb_org="Houston Astros" spring_league_id="" spring_league="" spring_league_abbrev="" spring_league_full="" venue_id="5285" venue_name="Jim Perry Stadium" venue_short="" time_zone="ET" time_zone_alt="America/New_York" address="" address_line1="" address_line2="" address_line3="" address_intl="" address_city="" address_state="" address_zip="" address_province="" address_country="" phone_number="" city="Buies Creek" state="NC" website_url="" store_url="" base_url="" first_year_of_play="1987" last_year_of_play="2017" all_star_sw="N" active_sw="Y" name="Astros" name_short="Buies Creek" sport_code_display="Class A Advanced" sport_code_name="A (Adv)"/>
