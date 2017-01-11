@@ -477,7 +477,7 @@ def rollGames(msXML,teams,baghdadBob,pDict):
 							pDict["announce"][gameId] = statusAttr
 							newResults["announce"].append(gameStr + gameNowStr)
 						else:
-							newResults["announce"].append(gameStr + " no longer " + pDict["announce"][gameId].lower() + ", " + gameNowStr)
+							newResults["announce"].append(gameStr + " no longer " + pDict["announce"][gameId].lower() + "," + gameNowStr)
 							del pDict["announce"][gameId]
 				else:
 					# simply a new announcement
