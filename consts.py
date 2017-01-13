@@ -24,6 +24,8 @@ boxscoreXmlUrl = "http://gdx.mlb.com/components/game/mlb/year_${year}/month_${mo
 scheduleXmlUrl = "http://mlb.com/lookup/xml/named.schedule_team_sponsors.bam?start_date=%27{year}/02/01%27&end_date=%27{year}/11/30%27&team_id={tid}&season={year}&game_type=%27R%27&game_type=%27A%27&game_type=%27E%27&game_type=%27F%27&game_type=%27D%27&game_type=%27L%27&game_type=%27W%27&game_type=%27C%27"
 #game_type S is exhibition; R regular season; D division; L league; W World Series; A ASG; (in schedule_xref only); don't know what E or C are
 
+gameTimeLocalTBAPlaceholder = "3:33:00 AM"
+
 # not using yet, but keeping for value
 # highlightsOfficialPageTemplate = "http://m.mlb.com/video/v629584083/"
 # playResultsByTimecodeUrl = "http://lwsa.mlb.com/tfs/tfs?file=/components/game/mlb/year_2016/month_04/day_30/gid_2016_04_30_wasmlb_slnmlb_1/plays.xml&timecode=20160430_182330"

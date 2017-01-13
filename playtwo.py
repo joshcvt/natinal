@@ -1,5 +1,5 @@
 import xml.dom, urllib, ConfigParser, json, logging, traceback, re, argparse
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, date
 from string import Template
 from xml.dom.minidom import parse
 from os import sys
@@ -13,6 +13,8 @@ logFN = "playtwo_undated.log"
 
 DUPE_TEAM_ID = -5555
 USE_CURRENT = -5556
+DH_SAME_DAY = -5557
+
 
 # http://mlb.com/lookup/xml/named.schedule_team_sponsors.bam?start_date=%272017/03/01%27&end_date=%272017/11/30%27&team_id=119&season=2017&game_type=%27R%27&game_type=%27A%27&game_type=%27E%27&game_type=%27F%27&game_type=%27D%27&game_type=%27L%27&game_type=%27W%27&game_type=%27C%27
 # http://mlb.com/lookup/xml/named.schedule_team_sponsors.bam?start_date=%272016/03/01%27&end_date=%272016/11/30%27&team_id=119&season=2016&game_type=%27R%27&game_type=%27A%27&game_type=%27E%27&game_type=%27F%27&game_type=%27D%27&game_type=%27L%27&game_type=%27W%27&game_type=%27C%27
@@ -85,7 +87,7 @@ def loadSchedule(tid,year=USE_CURRENT):
 		for stcomplete in schedTree.getElementsByTagName("schedule_team_complete"):	# should only be one
 			logging.debug("got stcomplete for " + scheduleXmlUrl.replace("{year}",year).replace("{tid}",tid))
 			for row in stcomplete.getElementsByTagName("row"):				# should be a lot
-				logging.debug("got row for tid " + tid)
+				#logging.debug("got row for tid " + tid)
 				rowDict = dict(row.attributes.items())
 				if rowDict["game_type"] in ("R","D","L","W"):
 					sched.append(rowDict)
@@ -94,7 +96,55 @@ def loadSchedule(tid,year=USE_CURRENT):
 		return None
 	
 	return sched
+	
+	
+def do_dh(scheds,hours=6):
 
+	TIMESEP_FUDGEMIN = 10
+	
+	# get the year from the sched
+	game_year = None
+	for tn in scheds:
+		if not game_year:
+			for rd in scheds[tn]:
+				try:
+					game_year = re.search(r'^(\d+)',rd["game_date"]).group(0)
+					if game_year:
+						break
+				except:
+					None
+	if not game_year:
+		raise Exception("no games found, can't do this")
+	else:
+		game_year = int(game_year)
+	
+	caldate = date(game_year,1,1)
+	yeardict = {}
+	oneday = timedelta(days=1)
+	while caldate.year == game_year:
+		yeardict[caldate.strftime("%Y-%m-%d")] = []
+		caldate += oneday
+	
+	# build game list by day, discarding road games
+	for tn in scheds:
+		for rd in scheds[tn]:
+			if rd["home_away_sw"] == 'H':
+				yeardict[rd["game_date"].split('T')[0]].append(rd)
+	
+	# run over list to find times six hours apart, minus gametime fudge factor 
+	#print rd["game_date"], rd["team_abbrev"], rd["opponent_abbrev"], rd["game_time_local"]
+	#2017-04-06T00:00:00 DE SAL 4/6/2017 3:33:00 AM
+	for ymd in sorted(yeardict):
+		if len(yeardict[ymd]) < 2:
+			continue
+		dstr = ymd
+		#sorted(byDivList,key=lambda div: re.sub("Central","Middle",div))
+		#for rd in yeardict[ymd]:
+		for rd in sorted(yeardict[ymd],key=lambda game:datetime.strptime(game["game_time_local"],"%m/%d/%Y %I:%M:%S %p")):
+			dstr += ", " + rd["opponent_abbrev"] + "@" + rd["team_abbrev"] + ", " + rd["game_time_local"]
+		print dstr
+	
+	
 
 def main():
 
@@ -119,6 +169,8 @@ def main():
 			
 	for tname in scheds:
 		logging.debug("Yo, I got sked for " + tname + ", " + str(len(scheds[tname])) + " games")
+		
+	do_dh(scheds)
 
 
 main()
