@@ -6,7 +6,12 @@ from os import sys
 
 from consts import *
 
-desiredTeams = ["BUIES CREEK ASTROS","DOWN EAST WOOD DUCKS","WINSTON-SALEM DASH"]
+#desiredTeams = ["BUIES CREEK ASTROS","DOWN EAST WOOD DUCKS","WINSTON-SALEM DASH"]
+#traveltime = 190	# minutes
+desiredTeams = ["Carolina Mudcats","Down East Wood Ducks"]
+traveltime = 70
+
+gamelen = 180		# minutes
 
 logLevel = logging.DEBUG
 logFN = "playtwo_undated.log"
@@ -96,9 +101,49 @@ def loadSchedule(tid,year=USE_CURRENT):
 		return None
 	
 	return sched
+
+def make_slotcal(game_year):
+
+	caldate = date(game_year,1,1)
+	yeardict = {}
+	oneday = timedelta(days=1)
+	while caldate.year == game_year:
+		yeardict[caldate.strftime("%Y-%m-%d")] = []
+		caldate += oneday
+
+	return yeardict
 	
+def std_gamestr(rd):
+	return rd["opponent_abbrev"] + "@" + rd["team_abbrev"] + ", " + rd["venue_name"] + ", " + rd["game_time_local"]
+
+def dh_ok(gamelist):
 	
-def do_dh(scheds,hours=6):
+	if len(gamelist) < 2:
+		return None
+	
+	gamelist = sorted(gamelist,key=lambda game:datetime.strptime(game["game_time_local"],"%m/%d/%Y %I:%M:%S %p"))
+	mindelta = timedelta(minutes=gamelen) + timedelta(minutes=traveltime)
+	
+	if len(gamelist) == 2:
+		gamedelta = datetime.strptime(gamelist[1]["game_time_local"],"%m/%d/%Y %I:%M:%S %p") - datetime.strptime(gamelist[0]["game_time_local"],"%m/%d/%Y %I:%M:%S %p")
+		if (gamedelta > mindelta):
+			return "Good DH: " + std_gamestr(gamelist[0]) + " and " + std_gamestr(gamelist[1])
+		else:
+			return None
+	else:
+		basestr = "haven't implemented calculation for " + str(len(gamelist)) + " games:\n\t"
+		n = 0
+		for rd in gamelist:
+			if n != 0:
+				basestr + "; "
+			basestr += std_gamestr(rd)
+			n += 1
+		return basestr
+
+	return None
+
+	
+def do_dh(scheds):
 
 	TIMESEP_FUDGEMIN = 10
 	
@@ -118,13 +163,8 @@ def do_dh(scheds,hours=6):
 	else:
 		game_year = int(game_year)
 	
-	caldate = date(game_year,1,1)
-	yeardict = {}
-	oneday = timedelta(days=1)
-	while caldate.year == game_year:
-		yeardict[caldate.strftime("%Y-%m-%d")] = []
-		caldate += oneday
-	
+	yeardict = make_slotcal(game_year)
+		
 	# build game list by day, discarding road games
 	for tn in scheds:
 		for rd in scheds[tn]:
@@ -135,14 +175,15 @@ def do_dh(scheds,hours=6):
 	#print rd["game_date"], rd["team_abbrev"], rd["opponent_abbrev"], rd["game_time_local"]
 	#2017-04-06T00:00:00 DE SAL 4/6/2017 3:33:00 AM
 	for ymd in sorted(yeardict):
-		if len(yeardict[ymd]) < 2:
-			continue
-		dstr = ymd
-		#sorted(byDivList,key=lambda div: re.sub("Central","Middle",div))
-		#for rd in yeardict[ymd]:
-		for rd in sorted(yeardict[ymd],key=lambda game:datetime.strptime(game["game_time_local"],"%m/%d/%Y %I:%M:%S %p")):
-			dstr += ", " + rd["opponent_abbrev"] + "@" + rd["team_abbrev"] + ", " + rd["game_time_local"]
-		print dstr
+		#if len(yeardict[ymd]) < 2:
+		#	continue
+		#dstr = ymd
+		#for rd in sorted(yeardict[ymd],key=lambda game:datetime.strptime(game["game_time_local"],"%m/%d/%Y %I:%M:%S %p")):
+		#	dstr += ", " + std_gamestr(rd)
+		#print dstr
+		dstr = dh_ok(yeardict[ymd])
+		if dstr:
+			print dstr
 	
 	
 
