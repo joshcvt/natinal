@@ -8,8 +8,8 @@ from consts import *
 
 #desiredTeams = ["BUIES CREEK ASTROS","DOWN EAST WOOD DUCKS","WINSTON-SALEM DASH"]
 #traveltime = 190	# minutes
-desiredTeams = ["Carolina Mudcats","Down East Wood Ducks"]
-traveltime = 70
+desiredTeams = ["Carolina","Down East"]
+traveltime = 120
 
 gamelen = 180		# minutes
 
@@ -90,9 +90,8 @@ def loadSchedule(tid,year=USE_CURRENT):
 	try:
 		schedTree = parse(usock)
 		for stcomplete in schedTree.getElementsByTagName("schedule_team_complete"):	# should only be one
-			logging.debug("got stcomplete for " + scheduleXmlUrl.replace("{year}",year).replace("{tid}",tid))
+			#logging.debug("got stcomplete for " + scheduleXmlUrl.replace("{year}",year).replace("{tid}",tid))
 			for row in stcomplete.getElementsByTagName("row"):				# should be a lot
-				#logging.debug("got row for tid " + tid)
 				rowDict = dict(row.attributes.items())
 				if rowDict["game_type"] in ("R","D","L","W"):
 					sched.append(rowDict)
@@ -101,6 +100,22 @@ def loadSchedule(tid,year=USE_CURRENT):
 		return None
 	
 	return sched
+
+def get_game_year(scheds):
+	game_year = None
+	for tn in scheds:
+		if not game_year:
+			for rd in scheds[tn]:
+				try:
+					game_year = re.search(r'^(\d+)',rd["game_date"]).group(0)
+					if game_year:
+						break
+				except:
+					None
+	if game_year:
+		game_year = int(game_year)
+	return game_year
+	
 
 def make_slotcal(game_year):
 
@@ -114,7 +129,11 @@ def make_slotcal(game_year):
 	return yeardict
 	
 def std_gamestr(rd):
-	return rd["opponent_abbrev"] + "@" + rd["team_abbrev"] + ", " + rd["venue_name"] + ", " + rd["game_time_local"]
+	if rd["home_away_sw"] == "H": 
+		gamestr = rd["opponent_abbrev"] + "@" + rd["team_abbrev"]
+	else:
+		gamestr = rd["team_abbrev"] + "@" + rd["opponent_abbrev"] 
+	return gamestr + ", " + rd["venue_name"] + ", " + rd["game_time_local"]
 
 def dh_ok(gamelist):
 	
@@ -148,20 +167,9 @@ def do_dh(scheds):
 	TIMESEP_FUDGEMIN = 10
 	
 	# get the year from the sched
-	game_year = None
-	for tn in scheds:
-		if not game_year:
-			for rd in scheds[tn]:
-				try:
-					game_year = re.search(r'^(\d+)',rd["game_date"]).group(0)
-					if game_year:
-						break
-				except:
-					None
+	game_year = get_game_year(scheds)
 	if not game_year:
 		raise Exception("no games found, can't do this")
-	else:
-		game_year = int(game_year)
 	
 	yeardict = make_slotcal(game_year)
 		
@@ -169,18 +177,15 @@ def do_dh(scheds):
 	for tn in scheds:
 		for rd in scheds[tn]:
 			if rd["home_away_sw"] == 'H':
-				yeardict[rd["game_date"].split('T')[0]].append(rd)
+				if re.search("3\:33\:00 AM$",rd["game_time_local"]):
+					logging.info("Discarding untimed game: " + std_gamestr(rd))
+				else:
+					yeardict[rd["game_date"].split('T')[0]].append(rd)
 	
-	# run over list to find times six hours apart, minus gametime fudge factor 
 	#print rd["game_date"], rd["team_abbrev"], rd["opponent_abbrev"], rd["game_time_local"]
 	#2017-04-06T00:00:00 DE SAL 4/6/2017 3:33:00 AM
 	for ymd in sorted(yeardict):
-		#if len(yeardict[ymd]) < 2:
-		#	continue
-		#dstr = ymd
-		#for rd in sorted(yeardict[ymd],key=lambda game:datetime.strptime(game["game_time_local"],"%m/%d/%Y %I:%M:%S %p")):
-		#	dstr += ", " + std_gamestr(rd)
-		#print dstr
+		
 		dstr = dh_ok(yeardict[ymd])
 		if dstr:
 			print dstr
@@ -192,12 +197,8 @@ def main():
 	logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=logFN, level=logLevel)
 
 	(leagues,teams) = loadLeagues()
-	#print json.dumps(leagues["afa"], indent=2)
-	#print leagues
 	(cities, fullnames, dupes) = buildIndexes(teams)
-	#print cities
-	#print fullnames
-	#print dupes
+
 	scheds = {}
 	for tname in desiredTeams:
 		if tname.upper() in fullnames:
@@ -205,6 +206,8 @@ def main():
 		elif tname.upper() in cities:
 			if cities[tname.upper()] == DUPE_TEAM_ID:
 				logging.error("team " + tname + " is ambiguous, must provide nickname")
+			else:
+				scheds[tname] = loadSchedule(cities[tname.upper()])
 		else:
 			logging.error("team not found: " + tname)
 			
