@@ -20,7 +20,7 @@ class TwitterNotifier(Notifier):
 		try:
 			self.tweeton = cfgParser.get(insec,"tweeton").strip().split(",")
 		except:
-			self.tweeton = ["win","loss"]
+			self.tweeton = ["win","loss","tie","neutral"]
 		try:
 			self.wintext = cfgParser.get(insec,"wintext").strip()
 		except:
@@ -50,7 +50,7 @@ class TwitterNotifier(Notifier):
 					elif (finalDict["result"] == "loss" and "loss" in self.tweeton):
 						restext = self.losstext
 					else:
-						restext = "TIE GAME (somehow)"
+						restext = "TIE GAME"
 					
 					if (self.scoretext == "before"):
 						msg = finalDict["final"] + ". " + restext

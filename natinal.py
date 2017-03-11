@@ -523,6 +523,8 @@ def rollGames(msXML,teams,baghdadBob,pDict):
 						finalDict["relevantteams"] = [highlightTeamName]
 						if (home in teams and int(runsElem.getAttribute("home")) > int(runsElem.getAttribute("away"))) or (away in teams and int(runsElem.getAttribute("away")) > int(runsElem.getAttribute("home"))):
 							finalDict["result"] = "win"
+						elif (int(runsElem.getAttribute("home")) == int(runsElem.getAttribute("away"))):
+							finalDict["result"] = "tie"
 						else:
 							finalDict["result"] = "loss"
 						
