@@ -280,11 +280,8 @@ def pullStandings(msXML, standingsUrlTemplate, scheduleDT):
 def doStandingsMagic(byDivList,prefix=""):
 
 	for k in sorted(byDivList,key=lambda div: re.sub("Central","Middle",div)): # so we get E/C/W
-		
-		totalGamesDivisor = team["w"]+team["l"]
-		if (totalGamesDivisor == 0):
-			totalGamesDivisor = 1	# for opening day, basically
-		byDivList[k].sort(key=lambda team: ( -team["w"]/totalGamesDivisor, -team["w"]) )
+	
+		byDivList[k].sort(key=lambda team: ( -team["w"]/( (team["w"]+team["l"]) if ((team["w"]+team["l"]) > 0) else 1), -team["w"]) )
 		firstW = None
 		firstL = None
 		rank = 0
