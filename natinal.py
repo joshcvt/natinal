@@ -117,9 +117,9 @@ def getScoreline(game):
 		
 	return statusStr
 
-def pullHighlights(game, highlightTeamId, baghdadBob, pDict, newResults):
+def pullHighlights(game, highlightTeamId, prefsDict, pDict, newResults):
 	
-	if baghdadBob == None:
+	if prefsDict["baghdadBob"] == None:
 		return (pDict, newResults)
 		
 	gameDataDir = game.getAttribute("game_data_directory")
@@ -134,7 +134,7 @@ def pullHighlights(game, highlightTeamId, baghdadBob, pDict, newResults):
 		logging.debug("got highlights for " + game.getAttribute("game_id") + "/ " + thisHighlightsUrl + " , teamId " + str(highlightTeamId))
 		mediaNodes = highlightsXml.getElementsByTagName("media")
 		for media in mediaNodes:
-			if (baghdadBob == False) or (highlightTeamId == BOTH or highlightTeamId == media.getAttribute("team_id") or media.getAttribute("media-type") == "C"):
+			if (prefsDict["baghdadBob"] == False) or (highlightTeamId == BOTH or highlightTeamId == media.getAttribute("team_id") or media.getAttribute("media-type") == "C"):
 				try:
 					#blurb = media.getElementsByTagName("blurb")[0].firstChild.childNodes[0].data
 					blurbElem = media.getElementsByTagName("blurb")[0]
@@ -154,7 +154,8 @@ def pullHighlights(game, highlightTeamId, baghdadBob, pDict, newResults):
 					playkey = mp4split[len(mp4split)-3]
 					if playkey not in pDict["results"]["highlights"].keys():
 						pDict["results"]["highlights"][playkey] = (blurb,mp4)
-						newResults["highlights"].append((blurb,mp4))
+						if ((prefsDict["suppressStatcast"] == False) or (("statcast" in blurb.lower()) == False)):
+							newResults["highlights"].append((blurb,mp4))
 					else:
 						logging.debug("I think this one's in pDict already")
 				except Exception as e:
@@ -398,7 +399,7 @@ def pullValidTeams(cfgParser,teamDirUrl,pDict):
 		logging.info("No team[s] requested. Only scanning league results (if that's even been written yet).")
 	return (teams,pDict)
 
-def rollGames(msXML,teams,baghdadBob,pDict):
+def rollGames(msXML,teams,prefsDict,pDict):
 
 	newResults = { "highlights":[],"finals":[],"probables":[],"backtalk":[],"announce":[],"underway":[], "lineups": [] }
 	
@@ -504,7 +505,7 @@ def rollGames(msXML,teams,baghdadBob,pDict):
 							
 			if statusAttr not in INACTIVE_GAME_STATUS_CODES:	# only the ones with a game in progress or complete
 				# moved all this out for clarity
-				(pDict, newResults) = pullHighlights(game, highlightTeamId, baghdadBob, pDict, newResults)
+				(pDict, newResults) = pullHighlights(game, highlightTeamId, prefsDict, pDict, newResults)
 
 			if statusAttr in FINAL_STATUS_CODES:
 		
@@ -670,11 +671,17 @@ def main():
 	except (ConfigParser.NoOptionError, ValueError):
 		masterScoreboardUrl = re.sub("LEAGUEBLOCK","mlb",leagueAgnosticMasterScoreboardUrl)
 
+	prefsDict = {}
 	try:
-		baghdadBob = config.getboolean("general","baghdadBob")
+		prefsDict["baghdadBob"] = config.getboolean("general","baghdadBob")
 	except ValueError:
-		baghdadBob = None 	# if it's not binary, NO HIGHLIGHTS AT ALL
+		prefsDict["baghdadBob"] = None 	# if it's not binary, NO HIGHLIGHTS AT ALL
 		logging.debug("baghdadBob is not binary, running with no highlights")
+		
+	try:
+		prefsDict["suppressStatcast"] = config.getboolean("general","suppressStatcast")
+	except ValueError:
+		prefsDict["suppressStatcast"] = false
 
 	persistDict = {}
 	firstOfTheDay = False
@@ -739,7 +746,7 @@ def main():
 		logging.debug("it's firstOfTheDay, morningAnnounce looks like " + str(morningAnnounce))
 	
 	if masterScoreboardXml:
-		(newResults,persistDict) = rollGames(masterScoreboardXml,validTeams,baghdadBob,persistDict)
+		(newResults,persistDict) = rollGames(masterScoreboardXml,validTeams,prefsDict,persistDict)
 	
 	isNew = False
 	for i in newResults:

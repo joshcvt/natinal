@@ -49,17 +49,15 @@ class TwitterNotifier(Notifier):
 						restext = self.wintext
 					elif (finalDict["result"] == "loss" and "loss" in self.tweeton):
 						restext = self.losstext
-					else:
-						restext = "TIE GAME"
 					
 					if (self.scoretext == "before"):
 						msg = finalDict["final"] + ". " + restext
 						if self.gamelink:
-							msg += " " + "GAMELINK"
+							msg += " " + self.gamelink
 					else:
 						msg = restext
 						if self.gamelink:
-							msg += "GAMELINK" + " "
+							msg += self.gamelink + " "
 						msg += finalDict["final"]
 					
 					self._tweet(msg)
