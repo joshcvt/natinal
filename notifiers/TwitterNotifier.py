@@ -49,6 +49,8 @@ class TwitterNotifier(Notifier):
 						restext = self.wintext
 					elif (finalDict["result"] == "loss" and "loss" in self.tweeton):
 						restext = self.losstext
+					else:
+						restext = "TIE GAME"
 					
 					if (self.scoretext == "before"):
 						msg = finalDict["final"] + ". " + restext
@@ -60,7 +62,8 @@ class TwitterNotifier(Notifier):
 							msg += self.gamelink + " "
 						msg += finalDict["final"]
 					
-					self._tweet(msg)
+					if (finalDict["result"] in self.tweeton):
+						self._tweet(msg)
 					
 	def _tweet(self,message):
 		api = twitter.Api(consumer_key=self.conskey, consumer_secret=self.conssecret,
