@@ -13,7 +13,7 @@ class SlackNotifier(Notifier):
 		except Exception:
 			self.useEasterEggs = False
 		self.channels = { }
-		for chan in ("backtalk_channel", "announce_channel", "highlight_channel","lineups_channel"):
+		for chan in ("backtalk_channel", "announce_channel", "highlight_channel","lineups_channel","condensed_double","underway_double"):
 			try:
 				self.channels[chan] = "#" + cfgParser.get(insec,chan).strip()
 			except Exception as e:
@@ -22,6 +22,7 @@ class SlackNotifier(Notifier):
 			self.backtalk_atuser = "@" + cfgParser.get(insec,"backtalk_atuser").strip()
 		except Exception as e:
 			self.backtalk_atuser = ""
+		
 		self.wingifs = []
 		self.lossgifs = []
 		try:
@@ -41,6 +42,8 @@ class SlackNotifier(Notifier):
 			for (blurb, mp4) in newres["highlights"]:
 				payloadDict = {"text": (blurb + ": [<" + mp4 + "|mp4>]")}
 				self._sendSlack(payloadDict,self.channels["highlight_channel"])
+				if ("CONDENSED GAME:" in blurb.upper() and len(self.channels["condensed_double"]) > 0):
+					self._sendSlack(payloadDict,self.channels["condensed_double"])
 
 		if "finals" in newres:
 			for finalDict in newres["finals"]:
@@ -101,6 +104,8 @@ class SlackNotifier(Notifier):
 				if "foxExclusive" in underwayDict and underwayDict["foxExclusive"]:
 					payloadDict["text"] = payloadDict["text"] + "\n_This game is a Fox TV exclusive; video highlights may not be available until postgame._"
 				self._sendSlack(payloadDict,self.channels["announce_channel"])
+				if len(self.channels["underway_double"]) > 0:
+					self._sendSlack(payloadDict,self.channels["underway_double"])
 
 		if "lineups" in newres:
 			for lineupsList in newres["lineups"]:
