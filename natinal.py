@@ -21,7 +21,7 @@ from string import Template
 from xml.dom.minidom import parse
 from os import sys
 
-from consts import *
+from nat_lib import *
 
 import notifiers
 
@@ -37,13 +37,6 @@ LEAGUE_GAMES = 162	# obvs this has to be refactored if we ever do MiLB
 
 # oddball magic-number const(s)
 BOTH = -99999
-
-INACTIVE_GAME_STATUS_CODES = ["Postponed", "Pre-Game", "Preview", "Warmup"]
-PREGAME_STATUS_CODES = ["Pre-Game", "Preview", "Warmup", "Delayed Start"]
-UPCOMING_STATUS_CODES = ["Pre-Game", "Warmup"]
-UNDERWAY_STATUS_CODES = ["In Progress", "Manager Challenge", "Review"]
-FINAL_STATUS_CODES = ["Final", "Game Over", "Completed Early"]
-ANNOUNCE_STATUS_CODES = ["Delayed Start", "Postponed", "Delayed"]
 
 
 def setupNotifiers(cfgParser):
@@ -63,17 +56,6 @@ def setupNotifiers(cfgParser):
 				logging.error("Notif construction failed for header " + head + "\n" + str(e))
 	
 	return theSet
-
-
-def divOrdinal(intStr):
-	match = re.search(r'\d+',intStr)
-	theInt = int(match.group())
-	singleEnds = {1:"st",2:"nd",3:"rd"}
-	# returns ordinal string for divisional position
-	if theInt in (11,12,13) or ((theInt % 10) in [0,4,5,6,7,8,9]):
-		return str(theInt) + "th"
-	else:
-		return str(theInt) + singleEnds[theInt % 10]
 
 def divShortName(teamDiv):
 	try:

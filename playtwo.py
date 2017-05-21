@@ -4,12 +4,12 @@ from string import Template
 from xml.dom.minidom import parse
 from os import sys
 
-from consts import *
+from nat_lib import *
 
 #desiredTeams = ["BUIES CREEK ASTROS","DOWN EAST WOOD DUCKS","WINSTON-SALEM DASH"]
 #traveltime = 190	# minutes
-desiredTeams = ["Carolina","Down East"]
-traveltime = 120
+desiredTeams = ["Winston-Salem","Down East"]
+traveltime = 190
 
 gamelen = 180		# minutes
 
