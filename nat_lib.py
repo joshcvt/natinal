@@ -49,6 +49,9 @@ codeToVariants = {
 	
 	"NYY":["Yankees","New York Yankees"],
 	
+	"MIN":["Minnesota","Twins","Minnesota Twins"],
+	"KC":["Kansas City","Royals","Kay Cee","KC","Kansas City Royals"],
+	
 	"SEA":["Seattle","Mariners","Seattle Mariners","M's","Ems"]
 	#TODO: fill
 	}
