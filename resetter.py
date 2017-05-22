@@ -68,7 +68,8 @@ def getReset(g):
 						"3": "Runner on third. ",
 						"4": "Runners on first and second. ",
 						"5": "Runners on first and third. ",
-						"6": "Runners on second and third. " }
+						"6": "Runners on second and third. ",
+				 		"7": "Bases loaded. "}
 			onBaseStatus = g.find("runners_on_base").attrib["status"]
 			reset += obstrs[onBaseStatus]
 			
