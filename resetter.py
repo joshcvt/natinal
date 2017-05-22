@@ -81,8 +81,8 @@ def getReset(g):
 	if stat in FINAL_STATUS_CODES:
 		reset += "Final "
 		if g.get("double_header_sw") == "Y":
-			reset += "of game " + g.get("game_nbr")
-		reset += " in " + placeAndScore(g) + ". "
+			reset += "of game " + g.get("game_nbr") + " "
+		reset += "in " + placeAndScore(g) + ". "
 			
 	return reset
 	
