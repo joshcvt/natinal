@@ -23,10 +23,12 @@ def buildVarsToCode():
 	for k in codeToVariants:
 		for var in codeToVariants[k]:
 			if var in vtoc:
-				print "OOPS: trying to duplicate pointer " + var + " as " + k + ", it's already " + vtoc[var]
-				return
+				raise Exception("OOPS: trying to duplicate pointer " + var + " as " + k + ", it's already " + vtoc[var])
 			else:
 				vtoc[var] = k
+		# and before we go, do k = k too
+		vtoc[k] = k
+		
 	return vtoc
 
 def placeAndScore(g):
@@ -35,7 +37,7 @@ def placeAndScore(g):
 	# score
 	hruns = g.find("linescore/r").attrib["home"]
 	aruns = g.find("linescore/r").attrib["away"]
-	if hruns > aruns:
+	if int(hruns) > int(aruns):
 		reset += (g.attrib["home_team_name"] + " " + hruns + ", " + g.attrib["away_team_name"] + " " + aruns)
 	else:
 		reset += (g.attrib["away_team_name"] + " " + aruns + ", " + g.attrib["home_team_name"] + " " + hruns)
@@ -118,7 +120,7 @@ def main():
 	masterScoreboardUrl = re.sub("LEAGUEBLOCK","mlb",leagueAgnosticMasterScoreboardUrl)
 	masterScoreboardTree = loadMasterScoreboard(masterScoreboardUrl,todayDT)
 
-	gns = findGameNodes(masterScoreboardTree,vtoc["KC"])
+	gns = findGameNodes(masterScoreboardTree,vtoc["Texas"])
 	#text = getReset(gn)
 	for gn in gns:
 		print getReset(gn)

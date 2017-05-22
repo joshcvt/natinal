@@ -42,22 +42,51 @@ UNDERWAY_STATUS_CODES = ["In Progress", "Manager Challenge", "Review"]
 FINAL_STATUS_CODES = ["Final", "Game Over", "Completed Early"]
 ANNOUNCE_STATUS_CODES = ["Delayed Start", "Postponed", "Delayed"]
 
-# future stuff for resetter
+# for resetter.  gives various ways the team can be addressed
+# including more phonetic representations for Alexa possibility
+# code is actually name_abbrev, not code.
 codeToVariants = {
-	"WSH":["Washington","Nationals","Washington Nationals","Nats"],
+	"WSH":["Washington","Nationals","Washington Nationals","Nats","Natinals"],
 	"NYM":["Mets","New York Mets"],
+	"ATL":["Braves","Barves","Atlanta","Atlanta Braves","A-Braves","Eh Braves"],
+	"MIA":["Marlins","Miami","Miami Marlins"],
+	"PHI":["Phillies","Philadelphia","Philly","Phils","Philadelphia Phillies"],
 	
-	"NYY":["Yankees","New York Yankees"],
+	"PIT":["Pirates","Pittsburgh","Pittsburgh Pirates","Bucs","Bucks"],
+	"CIN":["Cincinnati","Reds","Cincinnati Reds","Sin-see","Cincy"],
+	"MIL":["Milwaukee","Brewers","Brew Crew","Crew","Milwaukee Brewers"],
+	"CHC":["Cubs","Chicago Cubs","Cubbies","Shy Cubs","ChiCubs"],
+	"STL":["Cardinals","Cards","Redbirds","St. Louis","St. Louis Cardinals","Evil","Satan"],
 	
+	"SF":["San Francisco","S.F.","Giants","San Fran","San Francisco Giants"],
+	"LAD":["Los Angeles","L.A.","LA","Dodgers","Los Angeles Dodgers","L.A. Dodgers"],
+	"SD":["San Diego","S.D.","Padres","Pods","San Diego Padres","Friars"],
+	"ARI":["Arizona","Diamondbacks","D-Backs","Dee Backs","Arizona Diamondbacks","Snakes"],
+	"COL":["Colorado","Rockies","Colorado Rockies","Rocks"],
+	
+	"NYY":["Yankees","New York Yankees","Yanks"],
+	"BOS":["Red Sox","Boston","BoSox","Bo Socks","Boston Red Sox"],
+	"BAL":["Baltimore","Orioles","Oreos","Baltimore Orioles","O's"],
+	"TB":["Tampa Bay","Tampa","Rays","Tampa Bay Rays","D-Rays"],
+	"TOR":["Toronto","Blue Jays","Jays","Toronto Blue Jays"],
+	
+	"DET":["Detroit","Tigers","Detroit Tigers"],
 	"MIN":["Minnesota","Twins","Minnesota Twins"],
 	"KC":["Kansas City","Royals","Kay Cee","KC","Kansas City Royals"],
+	"CLE":["Cleveland","Wahoos","Indians","Cleveland Indians"],
+	"CWS":["Chicago White Sox","White Sox","ChiSox","Shy Sox"],
 	
+	"LAA":["Angels","Los Angeles Angels","L.A. Angels of Anaheim","Anaheim"],
+	"OAK":["Oakland","Athletics","A's","Oakland Athletics","Oakland A's"],
+	"TEX":["Texas","Rangers","Texas Rangers"],
+	"HOU":["Houston","Astros","Stros","Houston Astros"],
 	"SEA":["Seattle","Mariners","Seattle Mariners","M's","Ems"]
-	#TODO: fill
 	}
 dabList = {
 	"New York":["Mets","Yankees"],
-	"Chicago":["Cubs","White Sox"]
+	"Chicago":["Cubs","White Sox"],
+	"Sox":["Red Sox","White Sox"]
+	# I'm not disambiguating LA as Dodgers/Angels. LA is the Dodgers.
 	}
 	
 def divOrdinal(intStr):
