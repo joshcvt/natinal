@@ -53,6 +53,9 @@ def getReset(g):
 	stat = statNode.get("status")
 	reset = ""
 	
+	if stat in PREGAME_STATUS_CODES:
+		reset += g.attrib["away_team_name"] + " at " + g.attrib["home_team_name"] + " starts at " + g.attrib["time"] + " " + g.attrib["time_zone"] + "."
+	
 	if stat in UNDERWAY_STATUS_CODES:
 		if g.get("double_header_sw") == "Y":
 			reset += "Game " + g.get("game_nbr") + " in "
@@ -74,7 +77,9 @@ def getReset(g):
 			reset += obstrs[onBaseStatus]
 			
 			outs = statNode.get("o")
-			if outs == "1":
+			if outs == "0":
+				reset += "No outs. "
+			elif outs == "1":
 				reset += outs + " out. "
 			else:
 				reset += outs + " outs. "
@@ -121,8 +126,11 @@ def main():
 	masterScoreboardUrl = re.sub("LEAGUEBLOCK","mlb",leagueAgnosticMasterScoreboardUrl)
 	masterScoreboardTree = loadMasterScoreboard(masterScoreboardUrl,todayDT)
 
-	gns = findGameNodes(masterScoreboardTree,vtoc["Texas"])
-	#text = getReset(gn)
+	gns = findGameNodes(masterScoreboardTree,vtoc["CWS"])
+	
+	if len(gns) == 0:
+		print "No game today."
+	
 	for gn in gns:
 		print getReset(gn)
 	
