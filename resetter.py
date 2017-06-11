@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import urllib2, ConfigParser, json, logging, traceback, re, argparse
+import urllib2, ConfigParser, json, traceback, re, argparse	     #, logging
 from datetime import timedelta, datetime, date
 from string import Template
 #from xml.dom.minidom import parse
@@ -9,10 +9,10 @@ from os import sys
 
 from nat_lib import *
 
-intRolloverLocalTime = 1000
+intRolloverLocalTime = 1600
 
-logLevel = logging.DEBUG
-logFN = "resetter.log"
+#logLevel = logging.DEBUG
+#logFN = "resetter.log"
 
 def findGameNodes(msTree,team):
 	return (msTree.getroot().findall("./game[@away_name_abbrev='" + team + "']") + msTree.getroot().findall("./game[@home_name_abbrev='" + team + "']"))
@@ -33,7 +33,11 @@ def buildVarsToCode():
 
 def placeAndScore(g):
 
-	reset = g.get("location").split(",")[0] + ", "
+	reset = g.get("location").split(",")[0]
+	if (reset == "Bronx"):
+		reset = "the " + reset	# "In Bronx" looks and sounds funny.
+	reset +=  ", "
+	
 	# score
 	hruns = g.find("linescore/r").attrib["home"]
 	aruns = g.find("linescore/r").attrib["away"]
@@ -57,7 +61,7 @@ def getReset(g):
 		reset += g.attrib["away_team_name"] + " at " + g.attrib["home_team_name"] + " starts at " + g.attrib["time"] + " " + g.attrib["time_zone"] + "."
 	
 	if stat in UNDERWAY_STATUS_CODES:
-		if g.get("double_header_sw") == "Y":
+		if g.get("double_header_sw") in ("Y","S"):
 			reset += "Game " + g.get("game_nbr") + " in "
 		else:
 			reset += "In "
@@ -86,16 +90,19 @@ def getReset(g):
 	
 	if stat in FINAL_STATUS_CODES:
 		reset += "Final "
-		if g.get("double_header_sw") == "Y":
+		if g.get("double_header_sw") in ("Y","S"):	# S is for makeups
 			reset += "of game " + g.get("game_nbr") + " "
-		reset += "in " + placeAndScore(g) + ". "
+		reset += "in " + placeAndScore(g)
+		if (int(statNode.get("inning")) != 9):
+			reset += " in " + statNode.get("inning") + " innings"
+		reset += ". "
 			
 	return reset
 	
 	
 def loadMasterScoreboard(msURL,scheduleDT):
 	
-	logging.debug( "Running scoreboard for " + scheduleDT.strftime("%Y-%m-%d"))
+	#logging.debug( "Running scoreboard for " + scheduleDT.strftime("%Y-%m-%d"))
 	scheduleUrl = scheduleDT.strftime(msURL)
 	
 	try:
@@ -114,9 +121,9 @@ def loadMasterScoreboard(msURL,scheduleDT):
 	return None
 	
 
-def main():
+def launch(team):
 
-	logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=logFN, level=logLevel)
+	#logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=logFN, level=logLevel)
 	
 	vtoc = buildVarsToCode()
 
@@ -126,7 +133,7 @@ def main():
 	masterScoreboardUrl = re.sub("LEAGUEBLOCK","mlb",leagueAgnosticMasterScoreboardUrl)
 	masterScoreboardTree = loadMasterScoreboard(masterScoreboardUrl,todayDT)
 
-	gns = findGameNodes(masterScoreboardTree,vtoc["CWS"])
+	gns = findGameNodes(masterScoreboardTree,vtoc[team])
 	
 	if len(gns) == 0:
 		print "No game today."
@@ -134,6 +141,11 @@ def main():
 	for gn in gns:
 		print getReset(gn)
 	
+
+def main():
+
+	launch("Nats")
+
 
 main()
 
