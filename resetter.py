@@ -9,7 +9,7 @@ from os import sys
 
 from nat_lib import *
 
-intRolloverLocalTime = 1600
+intRolloverLocalTime = 1000
 
 #logLevel = logging.DEBUG
 #logFN = "resetter.log"
@@ -140,12 +140,17 @@ def launch(team):
 	
 	for gn in gns:
 		print getReset(gn)
+
+
+def lambda_handler(event,context):
+
 	
+
 
 def main():
 
 	launch("Nats")
 
 
-main()
+#main()
 
