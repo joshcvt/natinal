@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # NATINAL
-# (c) 2016 J. W. Crockett, Jr., josh.crockett@gmail.com
+# (c) 2016-17 J. W. Crockett, Jr., josh.crockett@gmail.com
 
 # Not
 # Another
@@ -246,7 +246,7 @@ def pullStandings(msXML, standingsUrlTemplate, scheduleDT):
 	byLeagueList = doStandingsMagic(byLeagueList,"league")
 	
 	for team in byTeam:
-		byTeam[team]["text"] = byTeam[team]["abbrev"] + " " + divOrdinal(byTeam[team]["pos"]) + " " + divShortName(byTeam[team]["div"]) + " (" + ((str(byTeam[team]["gb"]) + " GB") if byTeam[team]["gb"] >= 0.0 else ("+" + str(-byTeam[team]["gb"]) + " GA")) + ")"
+		byTeam[team]["text"] = byTeam[team]["abbrev"] + " " + str(int(byTeam[team]["w"])) + "-" + str(byTeam[team]["l"]) + ", " + divOrdinal(byTeam[team]["pos"]) + " " + divShortName(byTeam[team]["div"]) + " (" + ((str(byTeam[team]["gb"]) + " GB") if byTeam[team]["gb"] >= 0.0 else ("+" + str(-byTeam[team]["gb"]) + " GA")) + ")"
 		if "magic" in byTeam[team]:
 			if byTeam[team]["magic"] > 0:
 				byTeam[team]["text"] = byTeam[team]["text"] + ", magic number: " + str(int(byTeam[team]["magic"]))
@@ -301,8 +301,8 @@ def doStandingsMagic(byDivList,prefix=""):
 		for team in firstList:
 			team[prefix+"gb"] = -topGB
 			
-		# start populating magic number at 81 games in for first-place
-		if ((byDivList[k][0]["w"] + byDivList[k][0]["l"]) >= (LEAGUE_GAMES/2)):
+		# start populating magic number at 2/3 mark for first-place
+		if ((byDivList[k][0]["w"] + byDivList[k][0]["l"]) >= (2*LEAGUE_GAMES/3.0)):
 			byDivList[k][0][prefix+"magic"] = (LEAGUE_GAMES+1) - (byDivList[k][0]["w"] + byDivList[k][1]["l"])
 			for ln in range(1,len(byDivList[k])):
 				if byDivList[k][ln][prefix+"pos"] == "T-1":
@@ -563,11 +563,15 @@ def nextGame(teamId, afterGameDir, xmlList, masterScoreboardUrl=None, maxMoreDay
 		
 	return None
 
-def getProbables(game,standings=None,stripDate=False):
+def getProbables(game,standings=None,stripDate=False,tvTeam=None):
 	if game == None:
 		return None
 	runningStr = ""
 	subToken = "ZXZXCVCV"
+	
+	awayAbbr = game.getAttribute("away_name_abbrev")
+	homeAbbr = game.getAttribute("home_name_abbrev")
+	
 	for (ptag,cattr) in [("away_probable_pitcher","away_team_city"),("home_probable_pitcher","home_team_city")]:
 		try:
 			pitcher = game.getElementsByTagName(ptag)[0]
@@ -587,10 +591,23 @@ def getProbables(game,standings=None,stripDate=False):
 	if stripDate:
 		runningStr = re.sub("\, \d+\/\d+",",",runningStr)
 	
+	if tvTeam:
+		# lazy default here
+		bc = "home"
+		if tvTeam == awayAbbr:
+			bc = "away"
+		try:
+			bcast = game.getElementsByTagName("broadcast")[0].getElementsByTagName(bc)[0].getElementsByTagName("tv")[0].childNodes[0].data
+			runningStr += " (" + bcast + ")"
+		except Exception, e:
+			print e
+			pass	
+			
+	
 	if standings:
 		sep = "; "
 		sline = ""
-		for abbr in (game.getAttribute("away_name_abbrev"), game.getAttribute("home_name_abbrev")):
+		for abbr in (awayAbbr,homeAbbr):
 			sline = sline + sep + standings[abbr]["text"]
 		sline = re.sub("^"+sep,"",sline)
 		runningStr = runningStr + "\n" + sline
@@ -719,7 +736,7 @@ def main():
 					if gameProbs and (gameProbs != ''):
 						# put the simple one in pDict, because you'll compare that in rollGames for probables updates
 						persistDict["results"]["probables"][game.getAttribute("game_data_directory")] = gameProbs
-						gameProbsWithStandings = getProbables(game,standings,stripDate=True)
+						gameProbsWithStandings = getProbables(game,standings,stripDate=True,tvTeam=team)
 						if gameProbsWithStandings not in morningAnnounce:
 							morningAnnounce.append(gameProbsWithStandings)
 					game = nextGame(team,gddir,[masterScoreboardXml])
@@ -755,7 +772,7 @@ def main():
 				if isRegularSeason(masterScoreboardXml):
 					standings = pullStandings(masterScoreboardXml,standingsJsonUrl,todayDT)
 			for teamId in newFinal["relevantteams"]:
-				probablesStr = getProbables(nextGame(teamId,newFinal["gamedir"],[masterScoreboardXml,tomorrowScoreboardXml],masterScoreboardUrl,6))
+				probablesStr = getProbables(nextGame(teamId,newFinal["gamedir"],[masterScoreboardXml,tomorrowScoreboardXml],masterScoreboardUrl,6),tvTeam=teamId)
 				if probablesStr == None:
 					newFinal["probables"] = "No next game for " + teamId + " currently scheduled."
 				else:
