@@ -598,7 +598,7 @@ def getProbables(game,standings=None,stripDate=False,tvTeam=None):
 			bc = "away"
 		try:
 			bcast = game.getElementsByTagName("broadcast")[0].getElementsByTagName(bc)[0].getElementsByTagName("tv")[0].childNodes[0].data
-			runningStr += " (" + bcast + ")"
+			runningStr += "\nTV: " + bcast
 		except Exception, e:
 			print e
 			pass	
