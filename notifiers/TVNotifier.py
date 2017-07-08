@@ -22,26 +22,18 @@ class TVNotifier(Notifier):
 		
 		if "morningAnnounce" in newres.keys() and len(newres["morningAnnounce"]) > 0:
 			toTweet = []
-			print "i got a newres"
 			for game in newres["morningAnnounce"]:
-				print "got game: ", game
 				lines = game.split("\n")
 				gameOn = []
 				for line in lines:
 					if re.search("^TV: ",line):
 						channels = line.split("TV: ")[1].split(", ")
-						print "channels: ",channels
-						print "tweetif: ",self.tweetif
 						for ch in channels:
 							if ch in self.tweetif:
 								gameOn.append(ch)
-							else:
-								print ch, "not in", self.tweetif
-				print "gameOn:",gameOn
 				if len(gameOn) > 0:
 					toTweet.append(lines[0] + " on " + ", ".join(gameOn))
 			
-			print "toTweet: ",toTweet
 			for msg in toTweet:
 				self._tweet(msg)
 					
