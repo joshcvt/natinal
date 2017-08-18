@@ -83,9 +83,10 @@ codeToVariants = {
 	"SEA":["Seattle","Mariners","Seattle Mariners","M's","Ems"]
 	}
 dabList = {
-	"New York":["Mets","Yankees"],
-	"Chicago":["Cubs","White Sox"],
-	"Sox":["Red Sox","White Sox"]
+	"new york":["Mets","Yankees"],
+	"ny":["Mets","Yankees"],
+	"chicago":["Cubs","White Sox"],
+	"sox":["Red Sox","White Sox"]
 	# I'm not disambiguating LA as Dodgers/Angels. LA is the Dodgers.
 	}
 	

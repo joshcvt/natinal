@@ -2,7 +2,7 @@
 
 import urllib2, ConfigParser, json, traceback, re, argparse	     #, logging
 from datetime import timedelta, datetime, date
-from string import Template
+from string import Template, join
 #from xml.dom.minidom import parse
 import xml.etree.ElementTree as ET
 from os import sys
@@ -26,8 +26,11 @@ def buildVarsToCode():
 				raise Exception("OOPS: trying to duplicate pointer " + var + " as " + k + ", it's already " + vtoc[var])
 			else:
 				vtoc[var] = k
+				vtoc[var.lower()] = k
+				vtoc[var.upper()] = k
 		# and before we go, do k = k too
 		vtoc[k] = k
+		vtoc[k.lower()] = k	# it's already upper
 		
 	return vtoc
 
@@ -132,25 +135,21 @@ def launch(team):
 
 	masterScoreboardUrl = re.sub("LEAGUEBLOCK","mlb",leagueAgnosticMasterScoreboardUrl)
 	masterScoreboardTree = loadMasterScoreboard(masterScoreboardUrl,todayDT)
-
+	
+	if team.lower() in dabList:
+		return ["Did you mean " + join(dabList[team]," or ") + "?"]
+	elif team.lower() not in vtoc:
+		return ["I'm sorry, I didn't recognize team " + team + "."]
+	
 	gns = findGameNodes(masterScoreboardTree,vtoc[team])
 	
 	if len(gns) == 0:
-		print "No game today."
+		return ["No game today."]
 	
+	rv = []
 	for gn in gns:
-		print getReset(gn)
-
-
-def lambda_handler(event,context):
-
+		rv.append(getReset(gn))
 	
+	return rv
 
-
-def main():
-
-	launch("Nats")
-
-
-#main()
 
