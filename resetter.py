@@ -52,7 +52,7 @@ def placeAndScore(g):
 	return reset
 
 
-def getReset(g):
+def getReset(g,team,fluidVerbose):
 	if g == None:
 		return "No game today."
 
@@ -61,7 +61,10 @@ def getReset(g):
 	reset = ""
 	
 	if stat in PREGAME_STATUS_CODES:
-		reset += g.attrib["away_team_name"] + " at " + g.attrib["home_team_name"] + " starts at " + g.attrib["time"] + " " + g.attrib["time_zone"] + "."
+		if fluidVerbose:
+			reset += getProbables(g,team)
+		else:
+			reset += g.attrib["away_team_name"] + " at " + g.attrib["home_team_name"] + " starts at " + g.attrib["time"] + " " + g.attrib["time_zone"] + "."
 	
 	if stat in UNDERWAY_STATUS_CODES:
 		if g.get("double_header_sw") in ("Y","S"):
@@ -122,9 +125,51 @@ def loadMasterScoreboard(msURL,scheduleDT):
 		print "WENT WRONG: " + e.__module__ + "." + e.__class__.__name__
 	
 	return None
-	
 
-def launch(team):
+
+def getProbables(g,tvTeam=None):
+	if g == None:
+		return None
+	runningStr = ""
+	subToken = "ZXZXCVCV"
+	
+	awayAbbr = g.attrib["away_name_abbrev"]
+	homeAbbr = g.attrib["home_name_abbrev"]
+	
+	for (ptag,cattr) in [("away_probable_pitcher","away_team_city"),("home_probable_pitcher","home_team_city")]:
+		try:
+			pitcher = g.find(ptag)
+			pstr = pitcher.get("name_display_roster")
+		except:
+			return None
+		if "," in pstr:
+			pstr = pstr + "."
+		if pstr == "":
+			pstr = "TBA"
+		else:
+			pstr = pstr + " " + pitcher.get("wins") + "-" + pitcher.get("losses") + ", " + pitcher.get("era")
+		runningStr += (g.get(cattr) + " (" + pstr + ")" + subToken)
+	# you now have awaypitcherSUBTOKENhomepitcherSUBTOKEN
+	runningStr = re.sub(subToken+"$"," starts at ",runningStr)
+	runningStr = re.sub(subToken," at ", runningStr)
+	runningStr += g.attrib["time"] + " " + g.attrib["time_zone"] + "."
+	
+	if tvTeam:
+		# lazy default here
+		bc = "home"
+		if tvTeam == awayAbbr:
+			bc = "away"
+		try:
+			bcast = g.find("broadcast").find(bc).find("tv").text
+			runningStr += " TV broadcast is on " + bcast + "."
+		except Exception, e:
+			print e
+			pass	
+	
+	return runningStr
+
+
+def launch(team,fluidVerbose=False):
 
 	#logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=logFN, level=logLevel)
 	
@@ -148,7 +193,7 @@ def launch(team):
 	
 	rv = []
 	for gn in gns:
-		rv.append(getReset(gn))
+		rv.append(getReset(gn,vtoc[team],fluidVerbose))
 	
 	return rv
 
