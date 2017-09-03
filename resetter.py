@@ -1,9 +1,8 @@
 #!/usr/bin/python
 
-import urllib2, ConfigParser, json, traceback, re, argparse	     #, logging
+import urllib2, json, traceback # ConfigParser, argparse	     #, logging
 from datetime import timedelta, datetime, date
-from string import Template, join
-#from xml.dom.minidom import parse
+from string import join
 import xml.etree.ElementTree as ET
 from os import sys
 
@@ -150,8 +149,11 @@ def getProbables(g,tvTeam=None):
 			pstr = pstr + " " + pitcher.get("wins") + "-" + pitcher.get("losses") + ", " + pitcher.get("era")
 		runningStr += (g.get(cattr) + " (" + pstr + ")" + subToken)
 	# you now have awaypitcherSUBTOKENhomepitcherSUBTOKEN
-	runningStr = re.sub(subToken+"$"," starts at ",runningStr)
-	runningStr = re.sub(subToken," at ", runningStr)
+	#runningStr = re.sub(subToken+"$"," starts at ",runningStr)
+	#runningStr = re.sub(subToken," at ", runningStr)
+	
+	runningStr = runningstr.replace(subToken," at ",1).replace(subToken," starts at ") # do first, then second
+	
 	runningStr += g.attrib["time"] + " " + g.attrib["time_zone"] + "."
 	
 	if tvTeam:
@@ -169,16 +171,25 @@ def getProbables(g,tvTeam=None):
 	return runningStr
 
 
-def launch(team,fluidVerbose=False):
+def launch(team,fluidVerbose=False,rewind=False,ffwd=False):
 
 	#logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=logFN, level=logLevel)
 	
+	localRollover = intRolloverLocalTime
+	
+	if rewind:
+		# force yesterday's games by making the rollover absurd.
+		localRollover += 2400
+	if ffwd:
+		localRollover -= 2400
+	
 	vtoc = buildVarsToCode()
 
-	todayDT = datetime.now() - timedelta(minutes=((intRolloverLocalTime/100)*60+(intRolloverLocalTime%100)))
+	todayDT = datetime.now() - timedelta(minutes=((localRollover/100)*60+(localRollover%100)))
 	todayStr = todayDT.strftime("%Y-%m-%d")
 
-	masterScoreboardUrl = re.sub("LEAGUEBLOCK","mlb",leagueAgnosticMasterScoreboardUrl)
+	#masterScoreboardUrl = re.sub("LEAGUEBLOCK","mlb",leagueAgnosticMasterScoreboardUrl)
+	masterScoreboardUrl = leagueAgnosticMasterScoreboardUrl.replace("LEAGUEBLOCK","mlb")
 	masterScoreboardTree = loadMasterScoreboard(masterScoreboardUrl,todayDT)
 	
 	if team.lower() in dabList:
