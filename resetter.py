@@ -152,7 +152,7 @@ def getProbables(g,tvTeam=None):
 	#runningStr = re.sub(subToken+"$"," starts at ",runningStr)
 	#runningStr = re.sub(subToken," at ", runningStr)
 	
-	runningStr = runningstr.replace(subToken," at ",1).replace(subToken," starts at ") # do first, then second
+	runningStr = runningStr.replace(subToken," at ",1).replace(subToken," starts at ") # do first, then second
 	
 	runningStr += g.attrib["time"] + " " + g.attrib["time_zone"] + "."
 	
