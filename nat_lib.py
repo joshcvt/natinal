@@ -9,12 +9,12 @@ leagueAgnosticTeamDirectoryUrl = "http://mlb.com/lookup/xml/named.team_all.bam?s
 teamDirectoryUrl = leagueAgnosticTeamDirectoryUrl.replace("{league}","mlb")
 
 # exists unless there are no games scheduled that day
-leagueAgnosticMasterScoreboardUrl = "http://gdx.mlb.com/gdcross/components/game/LEAGUEBLOCK/year_%Y/month_%m/day_%d/master_scoreboard.xml"
+leagueAgnosticMasterScoreboardUrl = "http://gd2.mlb.com/components/game/LEAGUEBLOCK/year_%Y/month_%m/day_%d/master_scoreboard.xml"
 validLeagues = ["mlb","aaa","aax","afa","afx","asx","rok"] # in descending order
 
 
 # doesn't exist until the game starts
-mobileHighlightsUrl = "http://gdx.mlb.com/gdcross${game_data_directory}/media/mobile.xml" 
+mobileHighlightsUrl = "http://gd2.mlb.com${game_data_directory}/media/mobile.xml" 
 
 standingsJsonUrl = "http://mlb.mlb.com/lookup/json/named.standings_schedule_date.bam?season=${year}&schedule_game_date.game_date=%27${slashDate}%27&sit_code=%27h0%27&league_id=103&league_id=104&all_star_sw=%27N%27&version=2"
 
@@ -22,7 +22,7 @@ mlbTvUrl = "http://m.mlb.com/tv/e${calendar_event_id}/"
 mlbAudioUrl = "http://m.mlb.com/tv/e${calendar_event_id}/?media_type=audio&clickOrigin=MSB&team=mlb"
 
 # don't exist until the lineups drop
-boxscoreXmlUrl = "http://gdx.mlb.com/components/game/mlb/year_${year}/month_${month}/day_${day}/${game_id}/boxscore.xml"
+boxscoreXmlUrl = "http://gd2.mlb.com/components/game/mlb/year_${year}/month_${month}/day_${day}/${game_id}/boxscore.xml"
 
 scheduleXmlUrl = "http://mlb.com/lookup/xml/named.schedule_team_sponsors.bam?start_date=%27{year}/02/01%27&end_date=%27{year}/11/30%27&team_id={tid}&season={year}&game_type=%27R%27&game_type=%27A%27&game_type=%27E%27&game_type=%27F%27&game_type=%27D%27&game_type=%27L%27&game_type=%27W%27&game_type=%27C%27"
 #game_type S is exhibition; R regular season; D division; L league; W World Series; A ASG; (in schedule_xref only); don't know what E or C are
