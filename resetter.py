@@ -7,6 +7,7 @@ import xml.etree.ElementTree as ET
 from os import sys
 
 from nat_lib import *
+from reset_lib import NoGameException, NoTeamException, DabException
 
 intRolloverLocalTime = 1000
 
@@ -35,9 +36,14 @@ def buildVarsToCode():
 
 def placeAndScore(g):
 
-	reset = g.get("location").split(",")[0]
-	if (reset == "Bronx"):
-		reset = "the " + reset	# "In Bronx" looks and sounds funny.
+	loc = g.get("location").split(",")[0]
+	if not loc:
+		reset = "at " + g.get("venue") 
+	elif loc == "Bronx":
+		reset = "in the Bronx"
+	else:
+		reset = "in " + loc
+
 	reset +=  ", "
 	
 	# score
@@ -64,15 +70,20 @@ def getReset(g,team,fluidVerbose):
 			reset += getProbables(g,team)
 		else:
 			reset += g.attrib["away_team_name"] + " at " + g.attrib["home_team_name"] + " starts at " + g.attrib["time"] + " " + g.attrib["time_zone"] + "."
+		if stat in ANNOUNCE_STATUS_CODES:	# delayed start
+			reset = reset[:-1] + " (" + stat.lower() + ")."
 	
 	if stat in UNDERWAY_STATUS_CODES:
-		if g.get("double_header_sw") in ("Y","S"):
-			reset += "Game " + g.get("game_nbr") + " in "
-		else:
-			reset += "In "
 		
 		inningState = statNode.get("inning_state").lower()
-		reset += placeAndScore(g) + ", " + inningState + " of the " + divOrdinal(statNode.get("inning")) + ". "
+		reset = placeAndScore(g) + ", " + inningState + " of the " + divOrdinal(statNode.get("inning")) + ". "
+		
+		# might have at, might have in as the front.		
+		if g.get("double_header_sw") in ("Y","S"):
+			reset = "Game " + g.get("game_nbr") + " " + reset
+		else:
+			reset = reset[0].upper() + reset[1:]
+						
 		if inningState in ("top","bottom"): 	#in play
 			obstrs = { "0": "",	# don't need to say anything
 						"1": "Runner on first. ",
@@ -97,11 +108,15 @@ def getReset(g,team,fluidVerbose):
 		reset += "Final "
 		if g.get("double_header_sw") in ("Y","S"):	# S is for makeups
 			reset += "of game " + g.get("game_nbr") + " "
-		reset += "in " + placeAndScore(g)
+		reset += placeAndScore(g)
 		if (int(statNode.get("inning")) != 9):
 			reset += " in " + statNode.get("inning") + " innings"
 		reset += ". "
-			
+	
+	if (len(reset) == 0):
+		# give up
+		reset = g.attrib["away_team_name"] + " at " + g.attrib["home_team_name"] + " is " + stat.lower() + "."
+		
 	return reset
 	
 	
@@ -116,7 +131,8 @@ def loadMasterScoreboard(msURL,scheduleDT):
 		return msTree
 
 	#except socket.timeout as e:
-	#except urllib2.HTTPError as e:
+	except urllib2.HTTPError as e:
+		print "HTTP " + str(e.code) + " on URL: " + scheduleUrl
 		#if e.code in (404,403,500,410):
 		#elif e.code != 200:
 	#except urllib2.URLError as e:
@@ -163,15 +179,18 @@ def getProbables(g,tvTeam=None):
 			bc = "away"
 		try:
 			bcast = g.find("broadcast").find(bc).find("tv").text
-			runningStr += " TV broadcast is on " + bcast + "."
+			if bcast:
+				runningStr += " TV broadcast is on " + bcast + "."
+			else:
+				runningStr += " No TV."
 		except Exception, e:
-			print e
+			print "bcast exception:" + str(e)
 			pass	
 	
 	return runningStr
 
 
-def launch(team,fluidVerbose=False,rewind=False,ffwd=False):
+def launch(team,fluidVerbose=True,rewind=False,ffwd=False):
 
 	#logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=logFN, level=logLevel)
 	
@@ -186,9 +205,10 @@ def launch(team,fluidVerbose=False,rewind=False,ffwd=False):
 	vtoc = buildVarsToCode()
 
 	if team.lower() in dabList:
-		return ["Did you mean " + join(dabList[team]," or ") + "?"]
+		#return ["Did you mean " + join(dabList[team.lower()]," or ") + "?"]
+		raise DabException(dabList[team.lower()])
 	elif team.lower() not in vtoc:
-		return None
+		raise NoTeamException
 	
 	todayDT = datetime.now() - timedelta(minutes=((localRollover/100)*60+(localRollover%100)))
 	todayStr = todayDT.strftime("%Y-%m-%d")
@@ -197,10 +217,13 @@ def launch(team,fluidVerbose=False,rewind=False,ffwd=False):
 	masterScoreboardUrl = leagueAgnosticMasterScoreboardUrl.replace("LEAGUEBLOCK","mlb")
 	masterScoreboardTree = loadMasterScoreboard(masterScoreboardUrl,todayDT)
 	
-	gns = findGameNodes(masterScoreboardTree,vtoc[team])
+	if masterScoreboardTree:
+		gns = findGameNodes(masterScoreboardTree,vtoc[team])
+	else:
+		gns = []
 	
 	if len(gns) == 0:
-		return ["No game today for " + team + "."]
+		raise NoGameException("No game today for " + team + ".")
 	
 	rv = []
 	for gn in gns:
