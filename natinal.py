@@ -583,7 +583,13 @@ def getProbables(game,standings=None,stripDate=False,tvTeam=None):
 		if pstr == "":
 			pstr = "TBA"
 		else:
-			pstr = pstr + " " + pitcher.getAttribute("wins") + "-" + pitcher.getAttribute("losses") + ", " + pitcher.getAttribute("era")
+			pstr = pstr + " " + pitcher.getAttribute("wins") + "-" + pitcher.getAttribute("losses") + ", " 
+			# 2018: for some reason it switches a null ERA from "-.--" to "-" 10 minutes before game start. 
+			# don't let that change the string
+			era = pitcher.getAttribute("era")
+			if era == "-":
+				era = "-.--"	
+			pstr += era
 		runningStr += (game.getAttribute(cattr) + " (" + pstr + ")" + subToken)
 	runningStr = re.sub(subToken+"$",", ",runningStr)
 	runningStr = re.sub(subToken," at ", runningStr)
