@@ -9,17 +9,21 @@ from os import sys
 from nat_lib import *
 from reset_lib import NoGameException, NoTeamException, DabException
 
-intRolloverLocalTime = 1000
+intRolloverLocalTime = 1000		# for resetter this is UTC because Lambda runs in UTC
 
 #logLevel = logging.DEBUG
 #logFN = "resetter.log"
 
 def findGameNodes(msTree,team):
-	return (msTree.getroot().findall("./game[@away_name_abbrev='" + team + "']") + msTree.getroot().findall("./game[@home_name_abbrev='" + team + "']"))
+	if team.lower() in ("schedule","scoreboard"):
+		ret = msTree.getroot().findall("./game")
+		return ret
+	else:
+		return (msTree.getroot().findall("./game[@away_name_abbrev='" + team + "']") + msTree.getroot().findall("./game[@home_name_abbrev='" + team + "']"))
 
 
 def buildVarsToCode():
-	vtoc = {}
+	vtoc = {"schedule":"schedule", "scoreboard":"scoreboard"}
 	for k in codeToVariants:
 		for var in codeToVariants[k]:
 			if var in vtoc:
@@ -172,7 +176,7 @@ def getProbables(g,tvTeam=None):
 	
 	runningStr += g.attrib["time"] + " " + g.attrib["time_zone"] + "."
 	
-	if tvTeam:
+	if tvTeam and (tvTeam not in ("suppress","scoreboard","schedule")):
 		# lazy default here
 		bc = "home"
 		if tvTeam == awayAbbr:
@@ -203,17 +207,19 @@ def launch(team,fluidVerbose=True,rewind=False,ffwd=False):
 		localRollover -= 2400
 	
 	vtoc = buildVarsToCode()
-
-	if team.lower() in dabList:
+	
+	teamLiteral = team
+	team = team.strip().lower()
+	
+	if team in dabList:
 		#return ["Did you mean " + join(dabList[team.lower()]," or ") + "?"]
-		raise DabException(dabList[team.lower()])
-	elif team.lower() not in vtoc:
+		raise DabException(dabList[team])
+	elif team not in vtoc:
 		raise NoTeamException
 	
 	todayDT = datetime.now() - timedelta(minutes=((localRollover/100)*60+(localRollover%100)))
 	todayStr = todayDT.strftime("%Y-%m-%d")
 
-	#masterScoreboardUrl = re.sub("LEAGUEBLOCK","mlb",leagueAgnosticMasterScoreboardUrl)
 	masterScoreboardUrl = leagueAgnosticMasterScoreboardUrl.replace("LEAGUEBLOCK","mlb")
 	masterScoreboardTree = loadMasterScoreboard(masterScoreboardUrl,todayDT)
 	
@@ -223,7 +229,11 @@ def launch(team,fluidVerbose=True,rewind=False,ffwd=False):
 		gns = []
 	
 	if len(gns) == 0:
-		raise NoGameException("No game today for " + team + ".")
+		if team in ("schedule","scoreboard"):
+			ngstr = "No games today in MLB."
+		else:
+			ngstr = "No game today for " + team + "."
+		raise NoGameException(ngstr)
 	
 	rv = []
 	for gn in gns:
