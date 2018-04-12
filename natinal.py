@@ -120,15 +120,15 @@ def pullHighlights(game, highlightTeamId, prefsDict, pDict, newResults):
 				try:
 					#blurb = media.getElementsByTagName("blurb")[0].firstChild.childNodes[0].data
 					blurbElem = media.getElementsByTagName("blurb")[0]
-					blurb = " ".join(t.nodeValue for t in blurbElem.childNodes if t.nodeType == t.TEXT_NODE)
+					blurb = " ".join(t.nodeValue for t in blurbElem.childNodes if t.nodeType in (t.CDATA_SECTION_NODE,t.TEXT_NODE))
 					durationElem = media.getElementsByTagName("duration")[0]
 					if media.getAttribute("media-type") == "C":
-						blurb = blurb + " (" + (" ".join(t.nodeValue for t in durationElem.childNodes if t.nodeType == t.TEXT_NODE)) + ")"
+						blurb = blurb + " (" + (" ".join(t.nodeValue for t in durationElem.childNodes if t.nodeType in (t.CDATA_SECTION_NODE,t.TEXT_NODE))) + ")"
 					urls = media.getElementsByTagName("url")
 					mp4 = ""
 					for urlNode in urls:
 						if urlNode.getAttribute("playback-scenario") == "FLASH_1200K_640X360":
-							mp4 = " ".join(t.nodeValue for t in urlNode.childNodes if t.nodeType == t.TEXT_NODE).strip()
+							mp4 = " ".join(t.nodeValue for t in urlNode.childNodes if t.nodeType in (t.CDATA_SECTION_NODE,t.TEXT_NODE)).strip()
 							break
 					logging.debug("highlight: " + blurb + ", video: " + mp4)
 					
