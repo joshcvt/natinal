@@ -398,6 +398,7 @@ def rollGames(msXML,teams,prefsDict,pDict):
 		gameStr = away + " at " + home
 		gameDataDir = game.getAttribute("game_data_directory")
 		gameId = game.getAttribute("id")
+		gamePk = game.getAttribute("game_pk")
 
 		statusElement = statuses[0]
 		statusAttr = statusElement.getAttribute("status")
@@ -477,15 +478,11 @@ def rollGames(msXML,teams,prefsDict,pDict):
 				except:
 					foxExclusive = False
 				
-				try:
-					cevId = game.getElementsByTagName("media")[0].getAttribute("calendar_event_id")
-					pDict["underway"].append(gameId)
-					newResults["underway"].append( { "game": gameStr, 
-						"audio": Template(mlbAudioUrl).substitute(calendar_event_id=cevId),
-						"video": Template(mlbTvUrl).substitute(calendar_event_id=cevId) ,
-						"foxExclusive": foxExclusive } )
-				except:
-					log.error("Game underway but couldn't get <media calendar_event_id=...> for " + gameId)
+				pDict["underway"].append(gameId)
+				newResults["underway"].append( { "game": gameStr, 
+					"audio": mlbTvBaseUrl.format(pk=gamePk) + "?mediatype=audio",
+					"video": mlbTvBaseUrl.format(pk=gamePk) ,
+					"foxExclusive": foxExclusive } )
 							
 			if statusAttr not in INACTIVE_GAME_STATUS_CODES:	# only the ones with a game in progress or complete
 				# moved all this out for clarity

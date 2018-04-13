@@ -18,8 +18,7 @@ mobileHighlightsUrl = "http://gd2.mlb.com${game_data_directory}/media/mobile.xml
 
 standingsJsonUrl = "http://mlb.mlb.com/lookup/json/named.standings_schedule_date.bam?season=${year}&schedule_game_date.game_date=%27${slashDate}%27&sit_code=%27h0%27&league_id=103&league_id=104&all_star_sw=%27N%27&version=2"
 
-mlbTvUrl = "http://m.mlb.com/tv/e${calendar_event_id}/"
-mlbAudioUrl = "http://m.mlb.com/tv/e${calendar_event_id}/?media_type=audio&clickOrigin=MSB&team=mlb"
+mlbTvBaseUrl = "https://www.mlb.com/tv/g{pk}"
 
 # don't exist until the lineups drop
 boxscoreXmlUrl = "http://gd2.mlb.com/components/game/mlb/year_${year}/month_${month}/day_${day}/${game_id}/boxscore.xml"
