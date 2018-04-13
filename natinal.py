@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # NATINAL
-# (c) 2016-17 J. W. Crockett, Jr., josh.crockett@gmail.com
+# (c) 2016-18 J. W. Crockett, Jr., josh.crockett@gmail.com
 
 # Not
 # Another
@@ -99,6 +99,9 @@ def getScoreline(game):
 		
 	return statusStr
 
+def textFromElem(elem):
+	return (" ".join(t.nodeValue for t in elem.childNodes if t.nodeType in (t.CDATA_SECTION_NODE,t.TEXT_NODE))).strip()
+
 def pullHighlights(game, highlightTeamId, prefsDict, pDict, newResults):
 	
 	if prefsDict["baghdadBob"] == None:
@@ -118,17 +121,16 @@ def pullHighlights(game, highlightTeamId, prefsDict, pDict, newResults):
 		for media in mediaNodes:
 			if (prefsDict["baghdadBob"] == False) or (highlightTeamId == BOTH or highlightTeamId == media.getAttribute("team_id") or media.getAttribute("media-type") == "C"):
 				try:
-					#blurb = media.getElementsByTagName("blurb")[0].firstChild.childNodes[0].data
 					blurbElem = media.getElementsByTagName("blurb")[0]
-					blurb = " ".join(t.nodeValue for t in blurbElem.childNodes if t.nodeType in (t.CDATA_SECTION_NODE,t.TEXT_NODE))
+					blurb = textFromElem(blurbElem)
 					durationElem = media.getElementsByTagName("duration")[0]
 					if media.getAttribute("media-type") == "C":
-						blurb = blurb + " (" + (" ".join(t.nodeValue for t in durationElem.childNodes if t.nodeType in (t.CDATA_SECTION_NODE,t.TEXT_NODE))) + ")"
+						blurb = blurb + " (" + textFromElem(durationElem) + ")"
 					urls = media.getElementsByTagName("url")
 					mp4 = ""
 					for urlNode in urls:
 						if urlNode.getAttribute("playback-scenario") == "FLASH_1200K_640X360":
-							mp4 = " ".join(t.nodeValue for t in urlNode.childNodes if t.nodeType in (t.CDATA_SECTION_NODE,t.TEXT_NODE)).strip()
+							mp4 = textFromElem(urlNode)
 							break
 					logging.debug("highlight: " + blurb + ", video: " + mp4)
 					
