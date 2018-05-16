@@ -43,7 +43,8 @@ ANNOUNCE_STATUS_CODES = ["Delayed Start", "Postponed", "Delayed"]
 
 # for resetter.  gives various ways the team can be addressed
 # including more phonetic representations for Alexa possibility
-# code is actually name_abbrev, not code.
+# And some inside jokes.
+# code is actually name_abbrev, not code. 
 codeToVariants = {
 	"WSH":["Washington","Nationals","Washington Nationals","Nats","Natinals"],
 	"NYM":["Mets","New York Mets"],
@@ -61,7 +62,7 @@ codeToVariants = {
 	"LAD":["Los Angeles","L.A.","LA","Dodgers","Los Angeles Dodgers","L.A. Dodgers"],
 	"SD":["San Diego","S.D.","Padres","Pods","San Diego Padres","Friars"],
 	"ARI":["Arizona","Diamondbacks","D-Backs","Dee Backs","Arizona Diamondbacks","Snakes"],
-	"COL":["Colorado","Rockies","Colorado Rockies","Rocks"],
+	"COL":["Colorado","Rockies","Colorado Rockies","Rocks","Garbage Franchise","GarbageFranchise","#GarbageFranchise"],
 	
 	"NYY":["Yankees","New York Yankees","Yanks"],
 	"BOS":["Red Sox","Boston","BoSox","Bo Socks","Boston Red Sox"],
@@ -79,7 +80,7 @@ codeToVariants = {
 	"OAK":["Oakland","Athletics","A's","Oakland Athletics","Oakland A's"],
 	"TEX":["Texas","Rangers","Texas Rangers"],
 	"HOU":["Houston","Astros","Stros","Houston Astros"],
-	"SEA":["Seattle","Mariners","Seattle Mariners","M's","Ems"]
+	"SEA":["Seattle","Mariners","Seattle Mariners","M's","Ems","6org","Six org","6 org","#6org"]
 	}
 dabList = {
 	"new york":["Mets","Yankees"],

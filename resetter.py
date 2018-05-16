@@ -69,6 +69,8 @@ def getReset(g,team,fluidVerbose):
 	stat = statNode.get("status")
 	reset = ""
 	
+	is_dh = g.get("double_header_sw") in ("Y","S")
+		
 	if stat in PREGAME_STATUS_CODES:
 		if fluidVerbose:
 			reset += getProbables(g,team)
@@ -83,7 +85,7 @@ def getReset(g,team,fluidVerbose):
 		reset = placeAndScore(g) + ", " + inningState + " of the " + divOrdinal(statNode.get("inning")) + ". "
 		
 		# might have at, might have in as the front.		
-		if g.get("double_header_sw") in ("Y","S"):
+		if is_dh:
 			reset = "Game " + g.get("game_nbr") + " " + reset
 		else:
 			reset = reset[0].upper() + reset[1:]
@@ -110,7 +112,7 @@ def getReset(g,team,fluidVerbose):
 	
 	if stat in FINAL_STATUS_CODES:
 		reset += "Final "
-		if g.get("double_header_sw") in ("Y","S"):	# S is for makeups
+		if is_dh:
 			reset += "of game " + g.get("game_nbr") + " "
 		reset += placeAndScore(g)
 		if (int(statNode.get("inning")) != 9):
@@ -119,7 +121,10 @@ def getReset(g,team,fluidVerbose):
 	
 	if (len(reset) == 0):
 		# give up
-		reset = g.attrib["away_team_name"] + " at " + g.attrib["home_team_name"] + " is " + stat.lower() + "."
+		reset = g.attrib["away_team_name"] + " at " + g.attrib["home_team_name"] 
+		if is_dh:
+			reset += ' (game ' + str(g.attrib["game_nbr"]) + ')'
+		reset += " is " + stat.lower() + "."
 		
 	return reset
 	
