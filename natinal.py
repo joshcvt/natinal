@@ -75,7 +75,10 @@ def gidizeGameId(gameId):
 
 def getScoreline(game):
 	statusElement = game.getElementsByTagName("status")[0]
-	statusStr = "Final"
+	if statusElement.getAttribute("status") in SUSPENDED_STATUS_CODES:
+		statusStr = "Suspended game"
+	else:
+		statusStr = "Final"
 	innings = int(statusElement.getAttribute("inning"))
 	reason = statusElement.getAttribute("reason")
 	if innings != 9 or reason != "":
@@ -556,8 +559,8 @@ def nextGame(teamId, afterGameDir, xmlList, masterScoreboardUrl=None, maxMoreDay
 			teamId = teamId.upper()
 			if gameDir == afterGameDir:
 				afterGameDirReached = True
-			if (teamId in (home,away)) and (len(statuses) > 0) and (statuses[0].getAttribute("status") in PREGAME_STATUS_CODES) and (gameDir != afterGameDir) and afterGameDirReached:
-				logging.debug( "next game for " + teamId + (("after " + afterGameDir) if afterGameDir else "") + " is " + game.getAttribute("game_data_directory"))
+			if (teamId in (home,away)) and (len(statuses) > 0) and (statuses[0].getAttribute("status") in (PREGAME_STATUS_CODES + SUSPENDED_STATUS_CODES)) and (gameDir != afterGameDir) and afterGameDirReached:
+				logging.debug( "next game for " + teamId + ((" after " + afterGameDir) if afterGameDir else "") + " is " + game.getAttribute("game_data_directory"))
 				return game
 		
 	return None
@@ -740,21 +743,25 @@ def main():
 		for team in validTeams:
 			try:
 				game = nextGame(team,None,[masterScoreboardXml])
+				logging.debug("got a game for " + team)
 				while game != None:
 					gddir = game.getAttribute("game_data_directory")
-					gameProbs = getProbables(game,stripDate=True)
-					if gameProbs and (gameProbs != ''):
-						# put the simple one in pDict, because you'll compare that in rollGames for probables updates
-						persistDict["results"]["probables"][game.getAttribute("game_data_directory")] = gameProbs
-						gameProbsWithStandings = getProbables(game,standings,stripDate=True,tvTeam=team)
-						if gameProbsWithStandings not in morningAnnounce:
-							morningAnnounce.append(gameProbsWithStandings)
+					if game.getElementsByTagName("status")[0].getAttribute("status") in SUSPENDED_STATUS_CODES:
+						morningAnnounce.append(getScoreline(game) + " resumes " + game.getAttribute("time") + " " + game.getAttribute("home_ampm") + ".")
+					else:
+						gameProbs = getProbables(game,stripDate=True)
+						if gameProbs and (gameProbs != ''):
+							# put the simple one in pDict, because you'll compare that in rollGames for probables updates
+							persistDict["results"]["probables"][game.getAttribute("game_data_directory")] = gameProbs
+							gameProbsWithStandings = getProbables(game,standings,stripDate=True,tvTeam=team)
+							if gameProbsWithStandings not in morningAnnounce:
+								morningAnnounce.append(gameProbsWithStandings)
 					game = nextGame(team,gddir,[masterScoreboardXml])
 			except Exception as e:
 				logging.error("firstOfTheDay failed for " + team + ", " + traceback.format_exc(e))
 		logging.debug("it's firstOfTheDay, morningAnnounce looks like " + str(morningAnnounce))
 	
-	if masterScoreboardXml:
+	elif masterScoreboardXml:
 		(newResults,persistDict) = rollGames(masterScoreboardXml,validTeams,prefsDict,persistDict)
 	
 	isNew = False

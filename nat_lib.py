@@ -40,6 +40,7 @@ UPCOMING_STATUS_CODES = ["Pre-Game", "Warmup"]
 UNDERWAY_STATUS_CODES = ["In Progress", "Manager Challenge", "Review"]
 FINAL_STATUS_CODES = ["Final", "Game Over", "Completed Early"]
 ANNOUNCE_STATUS_CODES = ["Delayed Start", "Postponed", "Delayed"]
+SUSPENDED_STATUS_CODES = ["Suspended"]
 
 # for resetter.  gives various ways the team can be addressed
 # including more phonetic representations for Alexa possibility
