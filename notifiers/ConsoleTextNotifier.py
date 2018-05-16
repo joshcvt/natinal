@@ -9,20 +9,38 @@ class ConsoleTextNotifier(Notifier):
 	def pushResults(self,newres):
 		if "morningAnnounce" in newres.keys():
 			print("TODAY'S GAMES:")
-			for g in newres["morningAnnounce"]:
-				print g
-		for prob in newres["probables"]:
-			print "PROBABLES UPDATE: " + prob
-		for ann in newres["announce"]:
-			print "GAME STATUS UPDATE: " + ann
-		for (blurb, mp4) in newres["highlights"]:
-			print(blurb + ": " + mp4)
-		for finalDict in newres["finals"]:
-			textOut = finalDict["final"]
-			if finalDict["standings"] and (finalDict["standings"] != ""):
-				textOut += ", " + finalDict["standings"]
-			print textOut
-			print "Next: "+finalDict["probables"]
-		for underwayDict in newres["underway"]:
-			print underwayDict["game"] + " now underway. Radio: " + underwayDict["audio"] + ", TV: " + underwayDict["video"]
+			try:
+				for g in newres["morningAnnounce"]:
+					print g
+			except:
+				pass
+			try:
+				for prob in newres["probables"]:
+					print "PROBABLES UPDATE: " + prob
+			except:
+				pass
+			try:
+				for ann in newres["announce"]:
+					print "GAME STATUS UPDATE: " + ann
+			except:
+				pass
+			try:
+				for (blurb, mp4) in newres["highlights"]:
+					print(blurb + ": " + mp4)
+			except:
+				pass
+			try:
+				for finalDict in newres["finals"]:
+					textOut = finalDict["final"]
+					if finalDict["standings"] and (finalDict["standings"] != ""):
+						textOut += ", " + finalDict["standings"]
+					print textOut
+					print "Next: "+finalDict["probables"]
+			except:
+				pass
+			try:
+				for underwayDict in newres["underway"]:
+					print underwayDict["game"] + " now underway. Radio: " + underwayDict["audio"] + ", TV: " + underwayDict["video"]
+			except:
+				pass
 			
