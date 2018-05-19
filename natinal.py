@@ -75,7 +75,20 @@ def gidizeGameId(gameId):
 
 def getScoreline(game):
 	statusElement = game.getElementsByTagName("status")[0]
-	if statusElement.getAttribute("status") in SUSPENDED_STATUS_CODES:
+	statusAttr = statusElement.getAttribute("status")
+	
+	if statusAttr in POSTPONED_STATUS_CODES:
+	
+		statusStr = game.getAttribute("away_team_city") + " at " + game.getAttribute("home_team_city") + " postponed"
+		try:
+			makeup = game.getAttribute("description")
+			if makeup and len(makeup.strip()) > 0:
+				statusStr += " (" + makeup + ")"
+		except Exception as e:
+			pass
+		return statusStr
+		
+	elif statusAttr in SUSPENDED_STATUS_CODES:
 		statusStr = "Suspended game"
 	else:
 		statusStr = "Final"
@@ -559,7 +572,9 @@ def nextGame(teamId, afterGameDir, xmlList, masterScoreboardUrl=None, maxMoreDay
 			teamId = teamId.upper()
 			if gameDir == afterGameDir:
 				afterGameDirReached = True
-			if (teamId in (home,away)) and (len(statuses) > 0) and (statuses[0].getAttribute("status") in (PREGAME_STATUS_CODES + SUSPENDED_STATUS_CODES)) and (gameDir != afterGameDir) and afterGameDirReached:
+				
+			#if (teamId in (home,away)) and (len(statuses) > 0) and (statuses[0].getAttribute("status") in (PREGAME_STATUS_CODES + SUSPENDED_STATUS_CODES)) and (gameDir != afterGameDir) and afterGameDirReached:
+			if (teamId in (home,away)) and (len(statuses) > 0) and (gameDir != afterGameDir) and afterGameDirReached:
 				logging.debug( "next game for " + teamId + ((" after " + afterGameDir) if afterGameDir else "") + " is " + game.getAttribute("game_data_directory"))
 				return game
 		
@@ -743,11 +758,13 @@ def main():
 		for team in validTeams:
 			try:
 				game = nextGame(team,None,[masterScoreboardXml])
-				logging.debug("got a game for " + team)
 				while game != None:
 					gddir = game.getAttribute("game_data_directory")
+					logging.debug("got a game for " + team + ": " + gddir)
 					if game.getElementsByTagName("status")[0].getAttribute("status") in SUSPENDED_STATUS_CODES:
 						morningAnnounce.append(getScoreline(game) + " resumes " + game.getAttribute("time") + " " + game.getAttribute("home_ampm") + ".")
+					elif game.getElementsByTagName("status")[0].getAttribute("status") in POSTPONED_STATUS_CODES:
+						morningAnnounce.append(getScoreline(game))
 					else:
 						gameProbs = getProbables(game,stripDate=True)
 						if gameProbs and (gameProbs != ''):
