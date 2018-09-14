@@ -612,7 +612,7 @@ def getProbables(game,standings=None,stripDate=False,tvTeam=None):
 	runningStr = re.sub(subToken," at ", runningStr)
 	gtime = re.sub("^(\d+)\/","",game.getAttribute("time_date"))
 	if gtime.endswith("3:33"):
-		gtime = gtime[:-5] + ", time TBA"
+		gtime = gtime[:-5] + " time TBA"
 	else:
 		gtime += " " + game.getAttribute("time_zone")
 	runningStr += gtime
