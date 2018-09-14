@@ -60,6 +60,9 @@ def placeAndScore(g):
 	
 	return reset
 
+def is_doubleheader(g):
+	return (g.get("double_header_sw") in ("Y","S"))
+
 
 def getReset(g,team,fluidVerbose):
 	if g == None:
@@ -69,13 +72,16 @@ def getReset(g,team,fluidVerbose):
 	stat = statNode.get("status")
 	reset = ""
 	
-	is_dh = g.get("double_header_sw") in ("Y","S")
-		
+	is_dh = is_doubleheader(g)
+	
 	if stat in PREGAME_STATUS_CODES:
 		if fluidVerbose:
 			reset += getProbables(g,team)
 		else:
-			reset += g.attrib["away_team_name"] + " at " + g.attrib["home_team_name"] + " starts at " + g.attrib["time"] + " " + g.attrib["time_zone"] + "."
+			reset += g.attrib["away_team_name"] + " at " + g.attrib["home_team_name"]
+			if is_dh:
+				reset += ' (game ' + str(g.attrib["game_nbr"]) + ')'
+			reset += " starts at " + g.attrib["time"] + " " + g.attrib["time_zone"] + "."
 		if stat in ANNOUNCE_STATUS_CODES:	# delayed start
 			reset = reset[:-1] + " (" + stat.lower() + ")."
 	
@@ -124,7 +130,17 @@ def getReset(g,team,fluidVerbose):
 		reset = g.attrib["away_team_name"] + " at " + g.attrib["home_team_name"] 
 		if is_dh:
 			reset += ' (game ' + str(g.attrib["game_nbr"]) + ')'
-		reset += " is " + stat.lower() + "."
+		reset += " is " + stat.lower() 
+		
+		if stat in POSTPONED_STATUS_CODES:
+			try:
+				desc = g.attrib["description"]
+				if desc and len(desc.strip()) > 0:
+					reset += " (" + desc + ")"
+			except:
+				pass
+		
+		reset += "."
 		
 	return reset
 	
@@ -150,36 +166,37 @@ def loadMasterScoreboard(msURL,scheduleDT):
 	
 	return None
 
+def getPitcher(g,ah):
+	if ah not in ("away","home"):
+		return None
+	
+	try:
+		pitcher = g.find(ah + "_probable_pitcher")
+		pstr = pitcher.get("name_display_roster")
+	except:
+		return None
+	if "," in pstr:
+		pstr = pstr + "."
+	if pstr == "":
+		pstr = "TBA"
+	else:
+		pstr = pstr + " " + pitcher.get("wins") + "-" + pitcher.get("losses") + ", " + pitcher.get("era")
+	return (g.get(ah + "_team_city") + " (" + pstr + ")")
+	
 
 def getProbables(g,tvTeam=None):
 	if g == None:
 		return None
-	runningStr = ""
-	subToken = "ZXZXCVCV"
 	
 	awayAbbr = g.attrib["away_name_abbrev"]
 	homeAbbr = g.attrib["home_name_abbrev"]
 	
-	for (ptag,cattr) in [("away_probable_pitcher","away_team_city"),("home_probable_pitcher","home_team_city")]:
-		try:
-			pitcher = g.find(ptag)
-			pstr = pitcher.get("name_display_roster")
-		except:
-			return None
-		if "," in pstr:
-			pstr = pstr + "."
-		if pstr == "":
-			pstr = "TBA"
-		else:
-			pstr = pstr + " " + pitcher.get("wins") + "-" + pitcher.get("losses") + ", " + pitcher.get("era")
-		runningStr += (g.get(cattr) + " (" + pstr + ")" + subToken)
-	# you now have awaypitcherSUBTOKENhomepitcherSUBTOKEN
-	#runningStr = re.sub(subToken+"$"," starts at ",runningStr)
-	#runningStr = re.sub(subToken," at ", runningStr)
+	runningStr = getPitcher(g,"away") + " at " + getPitcher(g,"home")
 	
-	runningStr = runningStr.replace(subToken," at ",1).replace(subToken," starts at ") # do first, then second
+	if is_doubleheader(g):
+		runningStr += ' (game ' + str(g.attrib["game_nbr"]) + ')'
 	
-	runningStr += g.attrib["time"] + " " + g.attrib["time_zone"] + "."
+	runningStr += " starts at " + g.attrib["time"] + " " + g.attrib["time_zone"] + "."
 	
 	if tvTeam and (tvTeam not in ("suppress","scoreboard","schedule")):
 		# lazy default here
