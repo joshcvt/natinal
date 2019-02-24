@@ -125,41 +125,45 @@ def pullHighlights(game, highlightTeamId, prefsDict, pDict, newResults):
 		
 	gameDataDir = game.getAttribute("game_data_directory")
 	thisHighlightsUrl = Template(mobileHighlightsUrl).substitute(game_data_directory=gameDataDir)
+	logging.debug("Getting highlights URL: " + thisHighlightsUrl)
 	usock = urllib.urlopen(thisHighlightsUrl)
 	if usock.getcode() != 200:
 		# highlights file doesn't appear until there are highlights. fail softly.
 		logging.debug("highlights get failed for " + game.getAttribute("game_id") + "/ " + thisHighlightsUrl + " , " + game.getAttribute("home_lg_time") + " local " + thisHighlightsUrl)
 	else:
-		highlightsXml = parse(usock)
-		usock.close()
-		logging.debug("got highlights for " + game.getAttribute("game_id") + "/ " + thisHighlightsUrl + " , teamId " + str(highlightTeamId))
-		mediaNodes = highlightsXml.getElementsByTagName("media")
-		for media in mediaNodes:
-			if (prefsDict["baghdadBob"] == False) or (highlightTeamId == BOTH or highlightTeamId == media.getAttribute("team_id") or media.getAttribute("media-type") == "C"):
-				try:
-					blurbElem = media.getElementsByTagName("blurb")[0]
-					blurb = textFromElem(blurbElem)
-					durationElem = media.getElementsByTagName("duration")[0]
-					if media.getAttribute("media-type") == "C":
-						blurb = blurb + " (" + textFromElem(durationElem) + ")"
-					urls = media.getElementsByTagName("url")
-					mp4 = ""
-					for urlNode in urls:
-						if urlNode.getAttribute("playback-scenario") == "FLASH_1200K_640X360":
-							mp4 = textFromElem(urlNode)
-							break
-					logging.debug("highlight: " + blurb + ", video: " + mp4)
+		try:
+			highlightsXml = parse(usock)
+			usock.close()
+			logging.debug("got highlights for " + game.getAttribute("game_id") + "/ " + thisHighlightsUrl + " , teamId " + str(highlightTeamId))
+			mediaNodes = highlightsXml.getElementsByTagName("media")
+			for media in mediaNodes:
+				if (prefsDict["baghdadBob"] == False) or (highlightTeamId == BOTH or highlightTeamId == media.getAttribute("team_id") or media.getAttribute("media-type") == "C"):
+					try:
+						blurbElem = media.getElementsByTagName("blurb")[0]
+						blurb = textFromElem(blurbElem)
+						durationElem = media.getElementsByTagName("duration")[0]
+						if media.getAttribute("media-type") == "C":
+							blurb = blurb + " (" + textFromElem(durationElem) + ")"
+						urls = media.getElementsByTagName("url")
+						mp4 = ""
+						for urlNode in urls:
+							if urlNode.getAttribute("playback-scenario") == "FLASH_1200K_640X360":
+								mp4 = textFromElem(urlNode)
+								break
+						logging.debug("highlight: " + blurb + ", video: " + mp4)
 					
-					mp4split = re.split("\/",mp4)
-					playkey = mp4split[len(mp4split)-3]
-					if playkey not in pDict["results"]["highlights"].keys():
-						pDict["results"]["highlights"][playkey] = (blurb,mp4)
-						if ((prefsDict["suppressStatcast"] == False) or (("statcast" in blurb.lower()) == False)):
-							newResults["highlights"].append((blurb,mp4))
-					else:
-						logging.debug("I think this one's in pDict already")
-				except Exception as e:
-					logging.error(e)
+						mp4split = re.split("\/",mp4)
+						playkey = mp4split[len(mp4split)-3]
+						if playkey not in pDict["results"]["highlights"].keys():
+							pDict["results"]["highlights"][playkey] = (blurb,mp4)
+							if ((prefsDict["suppressStatcast"] == False) or (("statcast" in blurb.lower()) == False)):
+								newResults["highlights"].append((blurb,mp4))
+						else:
+							logging.debug("I think this one's in pDict already")
+					except Exception as e:
+						logging.error("Error taking apart individual mediaNode: " + str(e))
+		except Exception as e:
+			logging.error("Exception parsing highlightsXml: " + str(e))
 
 	return (pDict, newResults)
 		
@@ -174,7 +178,7 @@ def pullLineupsXml(gameId,xmlUrl):
 		logging.debug("getting lineup for " + gameId + " from " + exactXmlUrl)
 		usock = urllib.urlopen(exactXmlUrl)
 		if usock.getcode() != 200:
-			logging.debug("Exiting pullLineupsXml with usock.getcode() == " + usock.getcode())
+			logging.debug("Exiting pullLineupsXml with usock.getcode() == " + str(usock.getcode()))
 			return None
 		boxscoreXml = parse(usock)
 	except Exception, e:
@@ -212,6 +216,7 @@ def pullLineupsXml(gameId,xmlUrl):
 def pullStandings(msXML, standingsUrlTemplate, scheduleDT):
 	
 	baseStandingsUrl = Template(standingsUrlTemplate).substitute(year=scheduleDT.strftime("%Y"),slashDate=scheduleDT.strftime("%Y/%m/%d"))
+	logging.debug("Getting standings URL" + baseStandingsUrl)
 	byTeam = {}
 	byDivList = {}
 	byLeagueList = {}
@@ -333,7 +338,8 @@ def loadMasterScoreboard(msURL, scheduleDT, msOverrideFN=None):
 	if not msOverrideFN:
 		logging.debug( "Running scoreboard for " + scheduleDT.strftime("%Y-%m-%d"))
 		scheduleUrl = scheduleDT.strftime(msURL)
-
+		
+		logging.debug("Opening scheduleUrl: " + scheduleUrl)
 		usock = urllib.urlopen(scheduleUrl)
 		if (usock.getcode() == 404):
 			logging.info("Schedule not found. Either there are no games today or MLBAM has changed the master scoreboard URL.\n")
@@ -655,6 +661,7 @@ def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument("-c","--config")
 	parser.add_argument("-f","--file")
+	parser.add_argument("-d","--date")
 	args = parser.parse_args()
 
 	masterScoreboardOverride = args.file	# == None if not passed, which works
@@ -672,7 +679,12 @@ def main():
 	except Exception:
 		intRolloverLocalTime = int(defaultRolloverTime,base=10)
 	
-	todayDT = datetime.now() - timedelta(minutes=((intRolloverLocalTime/100)*60+(intRolloverLocalTime%100)))
+	if args.date:
+		sp = args.date.split('-')
+		todayDT = datetime(year=int(sp[0]),month=int(sp[1]),day=int(sp[2]),hour=23,minute=59)
+	else:
+		todayDT = datetime.now() - timedelta(minutes=((intRolloverLocalTime/100)*60+(intRolloverLocalTime%100)))
+	
 	todayStr = todayDT.strftime("%Y-%m-%d")
 
 	try:
@@ -744,7 +756,7 @@ def main():
 
 	# get master scoreboard DOM doc. Confirms that there are games today too.
 	masterScoreboardXml = loadMasterScoreboard(masterScoreboardUrl,todayDT,masterScoreboardOverride)
-		
+	
 	newResults = {}
 	morningAnnounce = []
 	
@@ -766,6 +778,7 @@ def main():
 					elif game.getElementsByTagName("status")[0].getAttribute("status") in POSTPONED_STATUS_CODES:
 						morningAnnounce.append(getScoreline(game))
 					else:
+						logging.debug("in the got a game else branch")
 						gameProbs = getProbables(game,stripDate=True)
 						if gameProbs and (gameProbs != ''):
 							# put the simple one in pDict, because you'll compare that in rollGames for probables updates
