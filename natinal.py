@@ -118,23 +118,22 @@ def getScoreline(game):
 def textFromElem(elem):
 	return (" ".join(t.nodeValue for t in elem.childNodes if t.nodeType in (t.CDATA_SECTION_NODE,t.TEXT_NODE))).strip()
 
-def pullHighlights(game, highlightTeamId, prefsDict, pDict, newResults):
+def pullHighlights(gamePk, highlightTeamId, prefsDict, pDict, newResults):
 	
 	if prefsDict["baghdadBob"] == None:
 		return (pDict, newResults)
 		
-	gamePk = game.getAttribute("gamePk")
 	thisHighlightsUrl = Template(statsApiGameContentJsonUrl).substitute(gamePk=gamePk)
 	logging.debug("Getting highlights URL: " + thisHighlightsUrl)
 	usock = urllib.urlopen(thisHighlightsUrl)
 	if usock.getcode() != 200:
 		# highlights file doesn't appear until there are highlights. fail softly.
-		logging.debug("highlights get failed for " + game.getAttribute("game_id") + "/ " + thisHighlightsUrl + " , " + game.getAttribute("home_lg_time") + " local " + thisHighlightsUrl)
+		logging.debug("highlights get failed for " + thisHighlightsUrl)
 	else:
 		try:
 			highlightsJson = json.load(usock)
 			usock.close()
-			logging.debug("got highlights for " + game.getAttribute("game_id") + "/ " + thisHighlightsUrl + " , teamId " + str(highlightTeamId))
+			logging.debug("got highlights for " + thisHighlightsUrl + " , teamId " + str(highlightTeamId))
 			
 			for media in highlightsJson["highlights"]["highlights"]["items"]:
 				if (prefsDict["baghdadBob"] == False) or highlightIsOfTeam(media,highlightTeamId):
@@ -515,7 +514,7 @@ def rollGames(msXML,teams,prefsDict,pDict):
 							
 			if statusAttr not in INACTIVE_GAME_STATUS_CODES:	# only the ones with a game in progress or complete
 				# moved all this out for clarity
-				(pDict, newResults) = pullHighlights(game, highlightTeamId, prefsDict, pDict, newResults)
+				(pDict, newResults) = pullHighlights(game.getAttribute("gamePk"), highlightTeamId, prefsDict, pDict, newResults)
 
 			if statusAttr in FINAL_STATUS_CODES:
 		
