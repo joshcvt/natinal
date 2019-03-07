@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # NATINAL
-# (c) 2016-18 J. W. Crockett, Jr., josh.crockett@gmail.com
+# (c) 2016-19 J. W. Crockett, Jr., josh.crockett@gmail.com
 
 # Not
 # Another
