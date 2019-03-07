@@ -12,6 +12,7 @@ teamDirectoryUrl = leagueAgnosticTeamDirectoryUrl.replace("{league}","mlb")
 leagueAgnosticMasterScoreboardUrl = "http://gd2.mlb.com/components/game/LEAGUEBLOCK/year_%Y/month_%m/day_%d/master_scoreboard.xml"
 validLeagues = ["mlb","aaa","aax","afa","afx","asx","rok"] # in descending order
 
+statsApiScheduleUrl = "https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=%Y-%m-%d&leagueId=103,104&hydrate=team,linescore,flags,liveLookin,review,game(content(summary,media(epg)),tickets),seriesStatus(useOverride=true),broadcasts(all)&useLatestGames=false&language=en"
 
 # doesn't exist until the game starts
 mobileHighlightsUrl = "http://gd2.mlb.com${game_data_directory}/media/mobile.xml" 
