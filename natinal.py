@@ -123,8 +123,8 @@ def pullHighlights(game, highlightTeamId, prefsDict, pDict, newResults):
 	if prefsDict["baghdadBob"] == None:
 		return (pDict, newResults)
 		
-	gameDataDir = game.getAttribute("game_data_directory")
-	thisHighlightsUrl = Template(mobileHighlightsUrl).substitute(game_data_directory=gameDataDir)
+	gamePk = game.getAttribute("gamePk")
+	thisHighlightsUrl = Template(statsApiGameContentJsonUrl).substitute(gamePk=gamePk)
 	logging.debug("Getting highlights URL: " + thisHighlightsUrl)
 	usock = urllib.urlopen(thisHighlightsUrl)
 	if usock.getcode() != 200:
@@ -132,13 +132,15 @@ def pullHighlights(game, highlightTeamId, prefsDict, pDict, newResults):
 		logging.debug("highlights get failed for " + game.getAttribute("game_id") + "/ " + thisHighlightsUrl + " , " + game.getAttribute("home_lg_time") + " local " + thisHighlightsUrl)
 	else:
 		try:
-			highlightsXml = parse(usock)
+			highlightsJson = json.load(usock)
 			usock.close()
 			logging.debug("got highlights for " + game.getAttribute("game_id") + "/ " + thisHighlightsUrl + " , teamId " + str(highlightTeamId))
-			mediaNodes = highlightsXml.getElementsByTagName("media")
-			for media in mediaNodes:
-				if (prefsDict["baghdadBob"] == False) or (highlightTeamId == BOTH or highlightTeamId == media.getAttribute("team_id") or media.getAttribute("media-type") == "C"):
+			
+			for media in highlightsJson["highlights"]["highlights"]["items"]:
+				if (prefsDict["baghdadBob"] == False) or highlightIsOfTeam(media,highlightTeamId):
+					#  or media.getAttribute("media-type") == "C" compressed game still needs check TODO TODO TODO
 					try:
+						##### TODO TODO TODO all of this needs to be jsonized
 						blurbElem = media.getElementsByTagName("blurb")[0]
 						blurb = textFromElem(blurbElem)
 						durationElem = media.getElementsByTagName("duration")[0]
@@ -163,9 +165,14 @@ def pullHighlights(game, highlightTeamId, prefsDict, pDict, newResults):
 					except Exception as e:
 						logging.error("Error taking apart individual mediaNode: " + str(e))
 		except Exception as e:
-			logging.error("Exception parsing highlightsXml: " + str(e))
+			logging.error("Exception parsing highlights JSON: " + str(e))
 
 	return (pDict, newResults)
+
+def highlightIsOfTeam(highlightItem,team):
+	if team == BOTH:
+		return True
+	#### TODO TODO TODO iterate
 		
 def pullLineupsXml(gameId,xmlUrl):
 
