@@ -34,6 +34,8 @@ defaultRolloverTime="0900"
 
 LEAGUE_GAMES = 162	# obvs this has to be refactored if we ever do MiLB
 
+# what kind of video should we pull? This one's OK, I think
+PREFERRED_PLAYBACK_LEVEL_NAME = "FLASH_1200K_640X360"
 
 # oddball magic-number const(s)
 BOTH = -99999
@@ -136,20 +138,17 @@ def pullHighlights(gamePk, highlightTeamId, prefsDict, pDict, newResults):
 			logging.debug("got highlights for " + thisHighlightsUrl + " , teamId " + str(highlightTeamId))
 			
 			for media in highlightsJson["highlights"]["highlights"]["items"]:
-				if (prefsDict["baghdadBob"] == False) or highlightIsOfTeam(media,highlightTeamId):
+				if (prefsDict["baghdadBob"] == False) or highlightIsOfTeam(media,highlightTeamId) or isCompressedGame(media):
 					#  or media.getAttribute("media-type") == "C" compressed game still needs check TODO TODO TODO
 					try:
 						##### TODO TODO TODO all of this needs to be jsonized
-						blurbElem = media.getElementsByTagName("blurb")[0]
-						blurb = textFromElem(blurbElem)
-						durationElem = media.getElementsByTagName("duration")[0]
-						if media.getAttribute("media-type") == "C":
-							blurb = blurb + " (" + textFromElem(durationElem) + ")"
-						urls = media.getElementsByTagName("url")
+						blurb = media["blurb"]
+						if isCompressedGame(media):
+							blurb = blurb + " (" + media["duration"] + ")"
 						mp4 = ""
-						for urlNode in urls:
-							if urlNode.getAttribute("playback-scenario") == "FLASH_1200K_640X360":
-								mp4 = textFromElem(urlNode)
+						for pb in media["playbacks"]:
+							if pb["name"] == PREFERRED_PLAYBACK_LEVEL_NAME:
+								mp4 = pb["url"]
 								break
 						logging.debug("highlight: " + blurb + ", video: " + mp4)
 					
@@ -168,11 +167,21 @@ def pullHighlights(gamePk, highlightTeamId, prefsDict, pDict, newResults):
 
 	return (pDict, newResults)
 
-def highlightIsOfTeam(highlightItem,team):
-	if team == BOTH:
+def highlightIsOfTeam(highlightItem,teamId):
+	if teamId == BOTH:
 		return True
-	#### TODO TODO TODO iterate
-		
+	# now iterate if we're still here
+	for kw in highlightItem["keywordsAll"]:
+		if kw["type"] == "team_id" and str(teamId) == str(kw["value"]):
+			return True
+	# if we're still here:
+	return False
+
+##### TODO TODO TODO won't know if this is right until compressed games appear, but abstracting it out helps fix later
+def isCompressedGame(mediaItem):
+	return (mediaItem["type"] == "C")
+
+
 def pullLineupsXml(gameId,xmlUrl):
 
 	try:
