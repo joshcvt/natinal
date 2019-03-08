@@ -124,7 +124,7 @@ def pullHighlights(gamePk, highlightTeamId, prefsDict, pDict, newResults):
 	
 	if prefsDict["baghdadBob"] == None:
 		return (pDict, newResults)
-		
+	
 	thisHighlightsUrl = statsApiGameContentJsonUrl.replace("GAME_PK",gamePk)
 	logging.debug("Getting highlights URL: " + thisHighlightsUrl)
 	usock = urllib.urlopen(thisHighlightsUrl)
@@ -141,7 +141,6 @@ def pullHighlights(gamePk, highlightTeamId, prefsDict, pDict, newResults):
 				if (prefsDict["baghdadBob"] == False) or highlightIsOfTeam(media,highlightTeamId) or isCompressedGame(media):
 					#  or media.getAttribute("media-type") == "C" compressed game still needs check TODO TODO TODO
 					try:
-						##### TODO TODO TODO all of this needs to be jsonized
 						blurb = media["blurb"]
 						if isCompressedGame(media):
 							blurb = blurb + " (" + media["duration"] + ")"
@@ -164,7 +163,7 @@ def pullHighlights(gamePk, highlightTeamId, prefsDict, pDict, newResults):
 						logging.error("Error taking apart individual mediaNode: " + str(e))
 		except Exception as e:
 			logging.error("Exception parsing highlights JSON: " + str(e))
-
+	
 	return (pDict, newResults)
 
 def highlightIsOfTeam(highlightItem,teamId):
@@ -550,7 +549,6 @@ def rollGames(msXML,teams,prefsDict,pDict):
 					logging.debug(finalDict)
 					newResults["finals"].append(finalDict)
 
-	
 	return (newResults,pDict)
 
 def nextGame(teamId, afterGameDir, xmlList, masterScoreboardUrl=None, maxMoreDays=0):
@@ -646,13 +644,12 @@ def getProbables(game,standings=None,stripDate=False,tvTeam=None):
 		if tvTeam == awayAbbr:
 			bc = "away"
 		try:
+			###### TODO TODO TODO there's an index out of range issue in spring training 2019 with this
 			bcast = game.getElementsByTagName("broadcast")[0].getElementsByTagName(bc)[0].getElementsByTagName("tv")[0].childNodes[0].data
 			runningStr += "\nTV: " + bcast
 		except Exception, e:
-			print e
-			pass	
-			
-	
+			logging.info("bcast takeapart failed: " + str(e))
+				
 	if standings:
 		sep = "; "
 		sline = ""
@@ -850,7 +847,7 @@ def main():
 		try:
 			if "staleResults" in persistDict:
 				if vn.header in persistDict["staleResults"]:
-					logging.error("haz a staleResult for " + vn.header + " " + str(persistDict["staleResults"][vn.header]))
+					logging.error("got a staleResult for " + vn.header + " " + str(persistDict["staleResults"][vn.header]))
 					stillStale = []
 					for rset in persistDict["staleResults"][vn.header]:
 						try:
