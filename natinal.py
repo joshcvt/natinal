@@ -125,7 +125,7 @@ def pullHighlights(gamePk, highlightTeamId, prefsDict, pDict, newResults):
 	if prefsDict["baghdadBob"] == None:
 		return (pDict, newResults)
 		
-	thisHighlightsUrl = Template(statsApiGameContentJsonUrl).substitute(gamePk=gamePk)
+	thisHighlightsUrl = statsApiGameContentJsonUrl.replace("GAME_PK",gamePk)
 	logging.debug("Getting highlights URL: " + thisHighlightsUrl)
 	usock = urllib.urlopen(thisHighlightsUrl)
 	if usock.getcode() != 200:
@@ -523,7 +523,7 @@ def rollGames(msXML,teams,prefsDict,pDict):
 							
 			if statusAttr not in INACTIVE_GAME_STATUS_CODES:	# only the ones with a game in progress or complete
 				# moved all this out for clarity
-				(pDict, newResults) = pullHighlights(game.getAttribute("gamePk"), highlightTeamId, prefsDict, pDict, newResults)
+				(pDict, newResults) = pullHighlights(gamePk, highlightTeamId, prefsDict, pDict, newResults)
 
 			if statusAttr in FINAL_STATUS_CODES:
 		

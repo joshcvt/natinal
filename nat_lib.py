@@ -13,7 +13,7 @@ leagueAgnosticMasterScoreboardUrl = "http://gd2.mlb.com/components/game/LEAGUEBL
 validLeagues = ["mlb","aaa","aax","afa","afx","asx","rok"] # in descending order
 
 # replaces mobilexml highlights
-statsApiGameContentJsonUrl = "https://statsapi.mlb.com/api/v1/game/{gamePk}/content?language=en" 
+statsApiGameContentJsonUrl = "https://statsapi.mlb.com/api/v1/game/GAME_PK/content?language=en" 
 
 standingsJsonUrl = "http://mlb.mlb.com/lookup/json/named.standings_schedule_date.bam?season=${year}&schedule_game_date.game_date=%27${slashDate}%27&sit_code=%27h0%27&league_id=103&league_id=104&all_star_sw=%27N%27&version=2"
 
