@@ -673,7 +673,7 @@ def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument("-c","--config")
 	parser.add_argument("-f","--file")
-	parser.add_argument("-d","--date")
+	parser.add_argument("-d","--date",help="Get results for a past date, in YYYY-mm-dd format")
 	args = parser.parse_args()
 
 	masterScoreboardOverride = args.file	# == None if not passed, which works
@@ -684,20 +684,6 @@ def main():
 		config.readfp(open(args.config))
 	else:
 		config.readfp(open(configFN))
-
-	try:
-		configRolloverTime = config.get("general","rolloverTime")
-		intRolloverLocalTime = int(configRolloverTime,base=10)
-	except Exception:
-		intRolloverLocalTime = int(defaultRolloverTime,base=10)
-	
-	if args.date:
-		sp = args.date.split('-')
-		todayDT = datetime(year=int(sp[0]),month=int(sp[1]),day=int(sp[2]),hour=23,minute=59)
-	else:
-		todayDT = datetime.now() - timedelta(minutes=((intRolloverLocalTime/100)*60+(intRolloverLocalTime%100)))
-	
-	todayStr = todayDT.strftime("%Y-%m-%d")
 
 	try:
 		persistFN = config.get("general","persist_dict_fn")
@@ -715,6 +701,22 @@ def main():
 	
 	logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=logFN, level=logLevel)
 	
+	try:
+		configRolloverTime = config.get("general","rolloverTime")
+		intRolloverLocalTime = int(configRolloverTime,base=10)
+	except Exception:
+		intRolloverLocalTime = int(defaultRolloverTime,base=10)
+	
+	if args.date:
+		sp = args.date.split('-')
+		todayDT = datetime(year=int(sp[0]),month=int(sp[1]),day=int(sp[2]),hour=23,minute=59)
+		persistFN = persistFN + "." + args.date
+		logging.info("Running against date " + args.date)
+	else:
+		todayDT = datetime.now() - timedelta(minutes=((intRolloverLocalTime/100)*60+(intRolloverLocalTime%100)))
+	
+	todayStr = todayDT.strftime("%Y-%m-%d")
+
 	try:
 		masterScoreboardUrl = re.sub("LEAGUEBLOCK",config.get("general","league"),leagueAgnosticMasterScoreboardUrl)
 		if config.get("general","league") not in validLeagues:
@@ -740,7 +742,7 @@ def main():
 		with open(persistFN) as opentest:
 			persistDict = json.load(file(persistFN))
 		if type(persistDict) != dict:
-			raise ValueError("this went wrong")
+			raise ValueError("persistFN has invalid data type")
 	except IOError:
 		pass	# persistFN doesn't exist
 	except ValueError:
@@ -774,7 +776,7 @@ def main():
 	
 	validNotifiers = setupNotifiers(config)
 
-	if firstOfTheDay and masterScoreboardXml:
+	if firstOfTheDay and masterScoreboardXml and (not args.date):
 		if isRegularSeason(masterScoreboardXml):
 			standings = pullStandings(masterScoreboardXml,standingsJsonUrl,todayDT)
 		else:
@@ -803,7 +805,7 @@ def main():
 				logging.error("firstOfTheDay failed for " + team + ", " + traceback.format_exc(e))
 		logging.debug("it's firstOfTheDay, morningAnnounce looks like " + str(morningAnnounce))
 	
-	elif masterScoreboardXml:
+	elif masterScoreboardXml: # args.date will hit here
 		(newResults,persistDict) = rollGames(masterScoreboardXml,validTeams,prefsDict,persistDict)
 	
 	isNew = False
@@ -826,20 +828,25 @@ def main():
 	
 	if "finals" in newResults:
 		for newFinal in newResults["finals"]:
-			if tomorrowScoreboardXml == None:
-				tomorrowScoreboardXml = loadMasterScoreboard(masterScoreboardUrl,(todayDT + timedelta(days=1)))
-				if isRegularSeason(masterScoreboardXml):
-					standings = pullStandings(masterScoreboardXml,standingsJsonUrl,todayDT)
-			for teamId in newFinal["relevantteams"]:
-				probablesStr = getProbables(nextGame(teamId,newFinal["gamedir"],[masterScoreboardXml,tomorrowScoreboardXml],masterScoreboardUrl,6),tvTeam=teamId)
-				if probablesStr == None:
-					newFinal["probables"] = "No next game for " + teamId + " currently scheduled."
-				else:
-					newFinal["probables"] = probablesStr
-				if standings:
-					newFinal["standings"] = re.sub(r'^(\w+)',r'\g<1> currently',standings[teamId]["text"])
-				else:
-					newFinal["standings"] = ""
+			if args.date:
+				# empty populate probables and standings
+				newFinal["probables"] = ''
+				newFinal["standings"] = ''
+			else:
+				if tomorrowScoreboardXml == None:
+					tomorrowScoreboardXml = loadMasterScoreboard(masterScoreboardUrl,(todayDT + timedelta(days=1)))
+					if isRegularSeason(masterScoreboardXml):
+						standings = pullStandings(masterScoreboardXml,standingsJsonUrl,todayDT)
+				for teamId in newFinal["relevantteams"]:
+					probablesStr = getProbables(nextGame(teamId,newFinal["gamedir"],[masterScoreboardXml,tomorrowScoreboardXml],masterScoreboardUrl,6),tvTeam=teamId)
+					if probablesStr == None:
+						newFinal["probables"] = "No next game for " + teamId + " currently scheduled."
+					else:
+						newFinal["probables"] = probablesStr
+					if standings:
+						newFinal["standings"] = re.sub(r'^(\w+)',r'\g<1> currently',standings[teamId]["text"])
+					else:
+						newFinal["standings"] = ""
 
 	for vn in validNotifiers:
 		# inherent assumption here: OK to resend whole package on notifier failure 
