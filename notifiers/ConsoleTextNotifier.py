@@ -7,6 +7,7 @@ class ConsoleTextNotifier(Notifier):
 		# in a real notifier, you'd do some cfgParser.get(sec,"service_specific_value") = value action here
 		
 	def pushResults(self,newres):
+
 		if "morningAnnounce" in newres.keys():
 			print("TODAY'S GAMES:")
 			try:
@@ -31,15 +32,16 @@ class ConsoleTextNotifier(Notifier):
 				print(blurb + ": " + mp4)
 		except:
 			pass
-		try:
-			for finalDict in newres["finals"]:
-				textOut = finalDict["final"]
-				if finalDict["standings"] and (finalDict["standings"] != ""):
+		
+		for finalDict in newres["finals"]:
+			textOut = finalDict["final"]
+			if "standings" in finalDict:
+				if finalDict["standings"] != "":
 					textOut += ", " + finalDict["standings"]
-				print textOut
+			print textOut
+			if finalDict["probables"]:
 				print "Next: "+finalDict["probables"]
-		except:
-			pass
+
 		try:
 			for underwayDict in newres["underway"]:
 				print underwayDict["game"] + " now underway. Radio: " + underwayDict["audio"] + ", TV: " + underwayDict["video"]
