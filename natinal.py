@@ -34,6 +34,8 @@ defaultRolloverTime="0900"
 
 LEAGUE_GAMES = 162	# obvs this has to be refactored if we ever do MiLB
 
+# what kind of video should we pull? This one's OK, I think
+PREFERRED_PLAYBACK_LEVEL_NAME = "FLASH_1200K_640X360"
 
 # oddball magic-number const(s)
 BOTH = -99999
@@ -118,37 +120,35 @@ def getScoreline(game):
 def textFromElem(elem):
 	return (" ".join(t.nodeValue for t in elem.childNodes if t.nodeType in (t.CDATA_SECTION_NODE,t.TEXT_NODE))).strip()
 
-def pullHighlights(game, highlightTeamId, prefsDict, pDict, newResults):
+def pullHighlights(gamePk, highlightTeamId, prefsDict, pDict, newResults):
 	
 	if prefsDict["baghdadBob"] == None:
 		return (pDict, newResults)
 		
-	gameDataDir = game.getAttribute("game_data_directory")
-	thisHighlightsUrl = Template(mobileHighlightsUrl).substitute(game_data_directory=gameDataDir)
+	thisHighlightsUrl = statsApiGameContentJsonUrl.replace("GAME_PK",gamePk)
 	logging.debug("Getting highlights URL: " + thisHighlightsUrl)
 	usock = urllib.urlopen(thisHighlightsUrl)
 	if usock.getcode() != 200:
 		# highlights file doesn't appear until there are highlights. fail softly.
-		logging.debug("highlights get failed for " + game.getAttribute("game_id") + "/ " + thisHighlightsUrl + " , " + game.getAttribute("home_lg_time") + " local " + thisHighlightsUrl)
+		logging.debug("highlights get failed for " + thisHighlightsUrl)
 	else:
 		try:
-			highlightsXml = parse(usock)
+			highlightsJson = json.load(usock)
 			usock.close()
-			logging.debug("got highlights for " + game.getAttribute("game_id") + "/ " + thisHighlightsUrl + " , teamId " + str(highlightTeamId))
-			mediaNodes = highlightsXml.getElementsByTagName("media")
-			for media in mediaNodes:
-				if (prefsDict["baghdadBob"] == False) or (highlightTeamId == BOTH or highlightTeamId == media.getAttribute("team_id") or media.getAttribute("media-type") == "C"):
+			logging.debug("got highlights for " + thisHighlightsUrl + " , teamId " + str(highlightTeamId))
+			
+			for media in highlightsJson["highlights"]["highlights"]["items"]:
+				if (prefsDict["baghdadBob"] == False) or highlightIsOfTeam(media,highlightTeamId) or isCompressedGame(media):
+					#  or media.getAttribute("media-type") == "C" compressed game still needs check TODO TODO TODO
 					try:
-						blurbElem = media.getElementsByTagName("blurb")[0]
-						blurb = textFromElem(blurbElem)
-						durationElem = media.getElementsByTagName("duration")[0]
-						if media.getAttribute("media-type") == "C":
-							blurb = blurb + " (" + textFromElem(durationElem) + ")"
-						urls = media.getElementsByTagName("url")
+						##### TODO TODO TODO all of this needs to be jsonized
+						blurb = media["blurb"]
+						if isCompressedGame(media):
+							blurb = blurb + " (" + media["duration"] + ")"
 						mp4 = ""
-						for urlNode in urls:
-							if urlNode.getAttribute("playback-scenario") == "FLASH_1200K_640X360":
-								mp4 = textFromElem(urlNode)
+						for pb in media["playbacks"]:
+							if pb["name"] == PREFERRED_PLAYBACK_LEVEL_NAME:
+								mp4 = pb["url"]
 								break
 						logging.debug("highlight: " + blurb + ", video: " + mp4)
 					
@@ -163,10 +163,25 @@ def pullHighlights(game, highlightTeamId, prefsDict, pDict, newResults):
 					except Exception as e:
 						logging.error("Error taking apart individual mediaNode: " + str(e))
 		except Exception as e:
-			logging.error("Exception parsing highlightsXml: " + str(e))
+			logging.error("Exception parsing highlights JSON: " + str(e))
 
 	return (pDict, newResults)
-		
+
+def highlightIsOfTeam(highlightItem,teamId):
+	if teamId == BOTH:
+		return True
+	# now iterate if we're still here
+	for kw in highlightItem["keywordsAll"]:
+		if kw["type"] == "team_id" and str(teamId) == str(kw["value"]):
+			return True
+	# if we're still here:
+	return False
+
+##### TODO TODO TODO won't know if this is right until compressed games appear, but abstracting it out helps fix later
+def isCompressedGame(mediaItem):
+	return (mediaItem["type"] == "C")
+
+
 def pullLineupsXml(gameId,xmlUrl):
 
 	try:
@@ -508,7 +523,7 @@ def rollGames(msXML,teams,prefsDict,pDict):
 							
 			if statusAttr not in INACTIVE_GAME_STATUS_CODES:	# only the ones with a game in progress or complete
 				# moved all this out for clarity
-				(pDict, newResults) = pullHighlights(game, highlightTeamId, prefsDict, pDict, newResults)
+				(pDict, newResults) = pullHighlights(gamePk, highlightTeamId, prefsDict, pDict, newResults)
 
 			if statusAttr in FINAL_STATUS_CODES:
 		
