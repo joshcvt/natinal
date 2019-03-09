@@ -34,6 +34,8 @@ defaultRolloverTime="0900"
 
 LEAGUE_GAMES = 162	# obvs this has to be refactored if we ever do MiLB
 
+# what kind of video should we pull? This one's OK, I think
+PREFERRED_PLAYBACK_LEVEL_NAME = "FLASH_1200K_640X360"
 
 # oddball magic-number const(s)
 BOTH = -99999
@@ -118,37 +120,34 @@ def getScoreline(game):
 def textFromElem(elem):
 	return (" ".join(t.nodeValue for t in elem.childNodes if t.nodeType in (t.CDATA_SECTION_NODE,t.TEXT_NODE))).strip()
 
-def pullHighlights(game, highlightTeamId, prefsDict, pDict, newResults):
+def pullHighlights(gamePk, highlightTeamId, prefsDict, pDict, newResults):
 	
 	if prefsDict["baghdadBob"] == None:
 		return (pDict, newResults)
-		
-	gameDataDir = game.getAttribute("game_data_directory")
-	thisHighlightsUrl = Template(mobileHighlightsUrl).substitute(game_data_directory=gameDataDir)
+	
+	thisHighlightsUrl = statsApiGameContentJsonUrl.replace("GAME_PK",gamePk)
 	logging.debug("Getting highlights URL: " + thisHighlightsUrl)
 	usock = urllib.urlopen(thisHighlightsUrl)
 	if usock.getcode() != 200:
 		# highlights file doesn't appear until there are highlights. fail softly.
-		logging.debug("highlights get failed for " + game.getAttribute("game_id") + "/ " + thisHighlightsUrl + " , " + game.getAttribute("home_lg_time") + " local " + thisHighlightsUrl)
+		logging.debug("highlights get failed for " + thisHighlightsUrl)
 	else:
 		try:
-			highlightsXml = parse(usock)
+			highlightsJson = json.load(usock)
 			usock.close()
-			logging.debug("got highlights for " + game.getAttribute("game_id") + "/ " + thisHighlightsUrl + " , teamId " + str(highlightTeamId))
-			mediaNodes = highlightsXml.getElementsByTagName("media")
-			for media in mediaNodes:
-				if (prefsDict["baghdadBob"] == False) or (highlightTeamId == BOTH or highlightTeamId == media.getAttribute("team_id") or media.getAttribute("media-type") == "C"):
+			logging.debug("got highlights for " + thisHighlightsUrl + " , teamId " + str(highlightTeamId))
+			
+			for media in highlightsJson["highlights"]["highlights"]["items"]:
+				if (prefsDict["baghdadBob"] == False) or highlightIsOfTeam(media,highlightTeamId) or isCompressedGame(media):
+					#  or media.getAttribute("media-type") == "C" compressed game still needs check TODO TODO TODO
 					try:
-						blurbElem = media.getElementsByTagName("blurb")[0]
-						blurb = textFromElem(blurbElem)
-						durationElem = media.getElementsByTagName("duration")[0]
-						if media.getAttribute("media-type") == "C":
-							blurb = blurb + " (" + textFromElem(durationElem) + ")"
-						urls = media.getElementsByTagName("url")
+						blurb = media["blurb"]
+						if isCompressedGame(media):
+							blurb = blurb + " (" + media["duration"] + ")"
 						mp4 = ""
-						for urlNode in urls:
-							if urlNode.getAttribute("playback-scenario") == "FLASH_1200K_640X360":
-								mp4 = textFromElem(urlNode)
+						for pb in media["playbacks"]:
+							if pb["name"] == PREFERRED_PLAYBACK_LEVEL_NAME:
+								mp4 = pb["url"]
 								break
 						logging.debug("highlight: " + blurb + ", video: " + mp4)
 					
@@ -163,10 +162,25 @@ def pullHighlights(game, highlightTeamId, prefsDict, pDict, newResults):
 					except Exception as e:
 						logging.error("Error taking apart individual mediaNode: " + str(e))
 		except Exception as e:
-			logging.error("Exception parsing highlightsXml: " + str(e))
-
+			logging.error("Exception parsing highlights JSON: " + str(e))
+	
 	return (pDict, newResults)
-		
+
+def highlightIsOfTeam(highlightItem,teamId):
+	if teamId == BOTH:
+		return True
+	# now iterate if we're still here
+	for kw in highlightItem["keywordsAll"]:
+		if kw["type"] == "team_id" and str(teamId) == str(kw["value"]):
+			return True
+	# if we're still here:
+	return False
+
+##### TODO TODO TODO won't know if this is right until compressed games appear, but abstracting it out helps fix later
+def isCompressedGame(mediaItem):
+	return (mediaItem["type"] == "C")
+
+
 def pullLineupsXml(gameId,xmlUrl):
 
 	try:
@@ -508,7 +522,7 @@ def rollGames(msXML,teams,prefsDict,pDict):
 							
 			if statusAttr not in INACTIVE_GAME_STATUS_CODES:	# only the ones with a game in progress or complete
 				# moved all this out for clarity
-				(pDict, newResults) = pullHighlights(game, highlightTeamId, prefsDict, pDict, newResults)
+				(pDict, newResults) = pullHighlights(gamePk, highlightTeamId, prefsDict, pDict, newResults)
 
 			if statusAttr in FINAL_STATUS_CODES:
 		
@@ -535,7 +549,6 @@ def rollGames(msXML,teams,prefsDict,pDict):
 					logging.debug(finalDict)
 					newResults["finals"].append(finalDict)
 
-	
 	return (newResults,pDict)
 
 def nextGame(teamId, afterGameDir, xmlList, masterScoreboardUrl=None, maxMoreDays=0):
@@ -634,10 +647,8 @@ def getProbables(game,standings=None,stripDate=False,tvTeam=None):
 			bcast = game.getElementsByTagName("broadcast")[0].getElementsByTagName(bc)[0].getElementsByTagName("tv")[0].childNodes[0].data
 			runningStr += "\nTV: " + bcast
 		except Exception, e:
-			print e
-			pass	
-			
-	
+			logging.debug("bcast takeapart failed, probably means no TV: " + str(e))
+				
 	if standings:
 		sep = "; "
 		sline = ""
@@ -661,7 +672,7 @@ def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument("-c","--config")
 	parser.add_argument("-f","--file")
-	parser.add_argument("-d","--date")
+	parser.add_argument("-d","--date",help="Get results for a past date, in YYYY-mm-dd format")
 	args = parser.parse_args()
 
 	masterScoreboardOverride = args.file	# == None if not passed, which works
@@ -672,20 +683,6 @@ def main():
 		config.readfp(open(args.config))
 	else:
 		config.readfp(open(configFN))
-
-	try:
-		configRolloverTime = config.get("general","rolloverTime")
-		intRolloverLocalTime = int(configRolloverTime,base=10)
-	except Exception:
-		intRolloverLocalTime = int(defaultRolloverTime,base=10)
-	
-	if args.date:
-		sp = args.date.split('-')
-		todayDT = datetime(year=int(sp[0]),month=int(sp[1]),day=int(sp[2]),hour=23,minute=59)
-	else:
-		todayDT = datetime.now() - timedelta(minutes=((intRolloverLocalTime/100)*60+(intRolloverLocalTime%100)))
-	
-	todayStr = todayDT.strftime("%Y-%m-%d")
 
 	try:
 		persistFN = config.get("general","persist_dict_fn")
@@ -703,6 +700,22 @@ def main():
 	
 	logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=logFN, level=logLevel)
 	
+	try:
+		configRolloverTime = config.get("general","rolloverTime")
+		intRolloverLocalTime = int(configRolloverTime,base=10)
+	except Exception:
+		intRolloverLocalTime = int(defaultRolloverTime,base=10)
+	
+	if args.date:
+		sp = args.date.split('-')
+		todayDT = datetime(year=int(sp[0]),month=int(sp[1]),day=int(sp[2]),hour=23,minute=59)
+		persistFN = persistFN + "." + args.date
+		logging.info("Running against date " + args.date)
+	else:
+		todayDT = datetime.now() - timedelta(minutes=((intRolloverLocalTime/100)*60+(intRolloverLocalTime%100)))
+	
+	todayStr = todayDT.strftime("%Y-%m-%d")
+
 	try:
 		masterScoreboardUrl = re.sub("LEAGUEBLOCK",config.get("general","league"),leagueAgnosticMasterScoreboardUrl)
 		if config.get("general","league") not in validLeagues:
@@ -728,7 +741,7 @@ def main():
 		with open(persistFN) as opentest:
 			persistDict = json.load(file(persistFN))
 		if type(persistDict) != dict:
-			raise ValueError("this went wrong")
+			raise ValueError("persistFN has invalid data type")
 	except IOError:
 		pass	# persistFN doesn't exist
 	except ValueError:
@@ -762,7 +775,7 @@ def main():
 	
 	validNotifiers = setupNotifiers(config)
 
-	if firstOfTheDay and masterScoreboardXml:
+	if firstOfTheDay and masterScoreboardXml and (not args.date):
 		if isRegularSeason(masterScoreboardXml):
 			standings = pullStandings(masterScoreboardXml,standingsJsonUrl,todayDT)
 		else:
@@ -791,7 +804,7 @@ def main():
 				logging.error("firstOfTheDay failed for " + team + ", " + traceback.format_exc(e))
 		logging.debug("it's firstOfTheDay, morningAnnounce looks like " + str(morningAnnounce))
 	
-	elif masterScoreboardXml:
+	elif masterScoreboardXml: # args.date will hit here
 		(newResults,persistDict) = rollGames(masterScoreboardXml,validTeams,prefsDict,persistDict)
 	
 	isNew = False
@@ -814,20 +827,25 @@ def main():
 	
 	if "finals" in newResults:
 		for newFinal in newResults["finals"]:
-			if tomorrowScoreboardXml == None:
-				tomorrowScoreboardXml = loadMasterScoreboard(masterScoreboardUrl,(todayDT + timedelta(days=1)))
-				if isRegularSeason(masterScoreboardXml):
-					standings = pullStandings(masterScoreboardXml,standingsJsonUrl,todayDT)
-			for teamId in newFinal["relevantteams"]:
-				probablesStr = getProbables(nextGame(teamId,newFinal["gamedir"],[masterScoreboardXml,tomorrowScoreboardXml],masterScoreboardUrl,6),tvTeam=teamId)
-				if probablesStr == None:
-					newFinal["probables"] = "No next game for " + teamId + " currently scheduled."
-				else:
-					newFinal["probables"] = probablesStr
-				if standings:
-					newFinal["standings"] = re.sub(r'^(\w+)',r'\g<1> currently',standings[teamId]["text"])
-				else:
-					newFinal["standings"] = ""
+			if args.date:
+				# empty populate probables and standings
+				newFinal["probables"] = ''
+				newFinal["standings"] = ''
+			else:
+				if tomorrowScoreboardXml == None:
+					tomorrowScoreboardXml = loadMasterScoreboard(masterScoreboardUrl,(todayDT + timedelta(days=1)))
+					if isRegularSeason(masterScoreboardXml):
+						standings = pullStandings(masterScoreboardXml,standingsJsonUrl,todayDT)
+				for teamId in newFinal["relevantteams"]:
+					probablesStr = getProbables(nextGame(teamId,newFinal["gamedir"],[masterScoreboardXml,tomorrowScoreboardXml],masterScoreboardUrl,6),tvTeam=teamId)
+					if probablesStr == None:
+						newFinal["probables"] = "No next game for " + teamId + " currently scheduled."
+					else:
+						newFinal["probables"] = probablesStr
+					if standings:
+						newFinal["standings"] = re.sub(r'^(\w+)',r'\g<1> currently',standings[teamId]["text"])
+					else:
+						newFinal["standings"] = ""
 
 	for vn in validNotifiers:
 		# inherent assumption here: OK to resend whole package on notifier failure 
@@ -835,7 +853,7 @@ def main():
 		try:
 			if "staleResults" in persistDict:
 				if vn.header in persistDict["staleResults"]:
-					logging.error("haz a staleResult for " + vn.header + " " + str(persistDict["staleResults"][vn.header]))
+					logging.error("got a staleResult for " + vn.header + " " + str(persistDict["staleResults"][vn.header]))
 					stillStale = []
 					for rset in persistDict["staleResults"][vn.header]:
 						try:

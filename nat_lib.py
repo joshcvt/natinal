@@ -14,8 +14,8 @@ validLeagues = ["mlb","aaa","aax","afa","afx","asx","rok"] # in descending order
 
 statsApiScheduleUrl = "https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=%Y-%m-%d&leagueId=103,104&hydrate=team,linescore,flags,liveLookin,review,game(content(summary,media(epg)),tickets),seriesStatus(useOverride=true),broadcasts(all)&useLatestGames=false&language=en"
 
-# doesn't exist until the game starts
-mobileHighlightsUrl = "http://gd2.mlb.com${game_data_directory}/media/mobile.xml" 
+# replaces mobilexml highlights
+statsApiGameContentJsonUrl = "https://statsapi.mlb.com/api/v1/game/GAME_PK/content?language=en" 
 
 standingsJsonUrl = "http://mlb.mlb.com/lookup/json/named.standings_schedule_date.bam?season=${year}&schedule_game_date.game_date=%27${slashDate}%27&sit_code=%27h0%27&league_id=103&league_id=104&all_star_sw=%27N%27&version=2"
 
