@@ -644,11 +644,10 @@ def getProbables(game,standings=None,stripDate=False,tvTeam=None):
 		if tvTeam == awayAbbr:
 			bc = "away"
 		try:
-			###### TODO TODO TODO there's an index out of range issue in spring training 2019 with this
 			bcast = game.getElementsByTagName("broadcast")[0].getElementsByTagName(bc)[0].getElementsByTagName("tv")[0].childNodes[0].data
 			runningStr += "\nTV: " + bcast
 		except Exception, e:
-			logging.info("bcast takeapart failed: " + str(e))
+			logging.debug("bcast takeapart failed, probably means no TV: " + str(e))
 				
 	if standings:
 		sep = "; "
