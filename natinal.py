@@ -192,11 +192,11 @@ def pullLineupsXml(gameId,xmlUrl):
 		logging.debug("getting lineup for " + gameId + " from " + exactXmlUrl)
 		usock = urllib.urlopen(exactXmlUrl)
 		if usock.getcode() != 200:
-			logging.debug("Exiting pullLineupsXml with usock.getcode() == " + str(usock.getcode()))
+			logging.debug("Exiting pullLineupsXml with usock.getcode() == " + str(usock.getcode()) + " " + exactXmlUrl)
 			return None
 		boxscoreXml = parse(usock)
 	except Exception, e:
-		logging.debug("Exiting pullLineupsXml with exception " + traceback.format_exc(e))
+		logging.info("Exiting pullLineupsXml during parse with exception " + traceback.format_exc(e)+ " " + exactXmlUrl)
 		return None
 	
 	bxElem = boxscoreXml.getElementsByTagName("boxscore")[0]
@@ -208,7 +208,12 @@ def pullLineupsXml(gameId,xmlUrl):
 	for team in boxscoreXml.getElementsByTagName("batting"):
 		which = team.getAttribute("team_flag")	# "home" or "away"
 		lup = [1,2,3,4,5,6,7,8,9]	# prepare the array
-		for batter in team.getElementsByTagName("batter"):
+		batters = team.getElementsByTagName("batter")
+		if (len(batters) < 9):
+			# possible they're posting lineupsXml before actual batters now in 2019. That ain't gonna work.
+			logging.info("Exiting pullLineupsXml at len(batters) < 9 on url " + exactXmlUrl)
+			return None
+		for batter in batters:
 			bo = batter.getAttribute("bo")
 			if bo == "":
 				# DH game pitcher
