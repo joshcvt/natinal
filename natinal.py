@@ -754,8 +754,10 @@ def main():
 		persistDict = {}
 
 	if "todayStr" not in persistDict or ("todayStr" in persistDict and persistDict["todayStr"] != todayStr):
-		for k in ("results","teamIdDir","announce","underway","upcoming"):
-			persistDict.pop(k,None)
+		for k in persistDict.keys():
+			if k != "teamIdDir":
+				# clear everything but the team ID directory in the morning
+				persistDict.pop(k,None)
 		firstOfTheDay = True
 			
 	persistDict["todayStr"] = todayStr
