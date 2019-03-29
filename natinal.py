@@ -151,14 +151,19 @@ def pullHighlights(gamePk, highlightTeamId, prefsDict, pDict, newResults):
 							if pb["name"] == PREFERRED_PLAYBACK_LEVEL_NAME:
 								mp4 = pb["url"]
 								break
-						logging.debug("highlight: " + blurb + ", video: " + mp4)
- 
-						if media["mediaPlaybackId"] not in pDict["results"]["highlights"].keys():
-							pDict["results"]["highlights"][media["mediaPlaybackId"]] = (blurb,mp4)
-							if ((prefsDict["suppressStatcast"] == False) or (("statcast" in blurb.lower()) == False)):
-								newResults["highlights"].append((blurb,mp4))
+						
+						if mp4 == "":
+							# nothing of PREFERRED_PLAYBACK_LEVEL_NAME was found
+							logging.info("Check blurb " + blurb + " for no highlight of " + PREFERRED_PLAYBACK_LEVEL_NAME)
 						else:
-							logging.debug("I think this one's in pDict already")
+							logging.debug("highlight: " + blurb + ", video: " + mp4)
+ 
+							if media["mediaPlaybackId"] not in pDict["results"]["highlights"].keys():
+								pDict["results"]["highlights"][media["mediaPlaybackId"]] = (blurb,mp4)
+								if ((prefsDict["suppressStatcast"] == False) or (("statcast" in blurb.lower()) == False)):
+									newResults["highlights"].append((blurb,mp4))
+							else:
+								logging.debug("I think this one's in pDict already")
 					except Exception as e:
 						logging.error("Error taking apart individual mediaNode: " + str(e))
 		except Exception as e:
