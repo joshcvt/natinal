@@ -35,7 +35,9 @@ defaultRolloverTime="0900"
 LEAGUE_GAMES = 162	# obvs this has to be refactored if we ever do MiLB
 
 # what kind of video should we pull? This one's OK, I think
-PREFERRED_PLAYBACK_LEVEL_NAME = "FLASH_1200K_640X360"
+# was "FLASH_1200K_640X360" until beginning of 2019 regular season. 
+# We'll want to move this to config in a refactor
+PREFERRED_PLAYBACK_LEVEL_NAME = "mp4Avc"	
 
 # oddball magic-number const(s)
 BOTH = -99999
@@ -150,11 +152,9 @@ def pullHighlights(gamePk, highlightTeamId, prefsDict, pDict, newResults):
 								mp4 = pb["url"]
 								break
 						logging.debug("highlight: " + blurb + ", video: " + mp4)
-					
-						mp4split = re.split("\/",mp4)
-						playkey = mp4split[len(mp4split)-3]
-						if playkey not in pDict["results"]["highlights"].keys():
-							pDict["results"]["highlights"][playkey] = (blurb,mp4)
+ 
+						if media["mediaPlaybackId"] not in pDict["results"]["highlights"].keys():
+							pDict["results"]["highlights"][media["mediaPlaybackId"]] = (blurb,mp4)
 							if ((prefsDict["suppressStatcast"] == False) or (("statcast" in blurb.lower()) == False)):
 								newResults["highlights"].append((blurb,mp4))
 						else:
