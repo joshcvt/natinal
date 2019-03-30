@@ -100,7 +100,7 @@ class SlackNotifier(Notifier):
 				self._sendSlack(payloadDict,self.channels["announce_channel"])
 		if "underway" in newres:
 			for underwayDict in newres["underway"]:
-				payloadDict = { "text": "*" + underwayDict["game"] + " now underway: <" + underwayDict["audio"] + "|radio> / <" + underwayDict["video"] + "|TV>*" }
+				payloadDict = { "text": "*" + underwayDict["game"] + " now underway: <" + underwayDict["audio"] + "|radio> / <" + underwayDict["video"] + "|TV> / <" + underwayDict["gameday"] + "|Gameday>*" }
 				if "foxExclusive" in underwayDict and underwayDict["foxExclusive"]:
 					payloadDict["text"] = payloadDict["text"] + "\n_This game is a Fox TV exclusive; video highlights may not be available until postgame._"
 				self._sendSlack(payloadDict,self.channels["announce_channel"])

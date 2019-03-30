@@ -528,6 +528,7 @@ def rollGames(msXML,teams,prefsDict,pDict):
 				newResults["underway"].append( { "game": gameStr, 
 					"audio": mlbTvBaseUrl.format(pk=gamePk) + "?mediatype=audio",
 					"video": mlbTvBaseUrl.format(pk=gamePk) ,
+					"gameday": gamedayBaseUrl.format(pk=gamePk),
 					"foxExclusive": foxExclusive } )
 							
 			if statusAttr not in INACTIVE_GAME_STATUS_CODES:	# only the ones with a game in progress or complete

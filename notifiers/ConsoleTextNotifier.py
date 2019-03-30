@@ -50,7 +50,7 @@ class ConsoleTextNotifier(Notifier):
 			pass
 		try:
 			for underwayDict in newres["underway"]:
-				print underwayDict["game"] + " now underway. Radio: " + underwayDict["audio"] + ", TV: " + underwayDict["video"]
+				print underwayDict["game"] + " now underway. Radio: " + underwayDict["audio"] + ", TV: " + underwayDict["video"] + ", gameday: " + underwayDict["gameday"]
 		except:
 			pass
 			
