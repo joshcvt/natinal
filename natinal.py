@@ -852,7 +852,10 @@ def main():
 				for teamId in newFinal["relevantteams"]:
 					probablesStr = getProbables(nextGame(teamId,newFinal["gamedir"],[masterScoreboardXml,tomorrowScoreboardXml],masterScoreboardUrl,6),tvTeam=teamId)
 					if probablesStr == None:
-						newFinal["probables"] = "No next game for " + teamId + " currently scheduled."
+						if "result" in newFinal and (newFinal["result"] == "win") and not isRegularSeason(masterScoreboardXml):
+							newFinal["probables"] = "Next game for " + teamId + " TBA."
+						else:
+							newFinal["probables"] = "No next game for " + teamId + " currently scheduled."
 					else:
 						newFinal["probables"] = probablesStr
 					if standings:
