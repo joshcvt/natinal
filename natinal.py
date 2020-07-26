@@ -32,8 +32,6 @@ configFN = "config.ini"		# may be overridden by -c fn.ini
 # I prefer 9 as a good rollover/announcement time.  This setting is overridden by config:[general]/rolloverTime.
 defaultRolloverTime="0900"
 
-LEAGUE_GAMES = 162	# obvs this has to be refactored if we ever do MiLB
-
 # what kind of video should we pull? This one's OK, I think
 # was "FLASH_1200K_640X360" until beginning of 2019 regular season. 
 # We'll want to move this to config in a refactor
@@ -240,7 +238,7 @@ def pullLineupsXml(gameId,xmlUrl):
 def pullStandings(msXML, standingsUrlTemplate, scheduleDT):
 	
 	baseStandingsUrl = scheduleDT.strftime(standingsUrlTemplate)
-	logging.debug("Getting standings URL" + baseStandingsUrl)
+	logging.debug("Getting standings URL " + baseStandingsUrl)
 	byTeam = {}
 	byDivList = {}
 	byLeagueList = {}
@@ -255,8 +253,12 @@ def pullStandings(msXML, standingsUrlTemplate, scheduleDT):
 		logging.error("JSON standings get/decode failed for standings URL " + baseStandingsUrl + ", " + traceback.format_exc(e))
 		return None
 	
+	seasonGames = int(baseDivisions[0]["league"]["numGames"])
+	
 	for div in baseDivisions:
 		lname = div["league"]["abbreviation"]   # AL or NL
+		if (int(div["league"]["numGames"]) != seasonGames):
+		    logging.error("We got variable season lengths (div/league/numGames) in standings URL " + baseStandingsUrl + ": " + str(seasonGames) + ", " + str(div["league"]["numGames"]))
 		for rec in div["teamRecords"]:
 			td = {}
 			td["abbrev"] = rec["team"]["abbreviation"]
@@ -288,9 +290,9 @@ def pullStandings(msXML, standingsUrlTemplate, scheduleDT):
 		byLeagueList[byTeam[team]["league"]].append(byTeam[team])
 		# this leaves the structures pointing to the same team objects.  this will be useful.
 		
-	byDivList = doStandingsMagic(byDivList)
+	byDivList = doStandingsMagic(byDivList,seasonGames)
 
-	byLeagueList = doStandingsMagic(byLeagueList,"league")
+	byLeagueList = doStandingsMagic(byLeagueList,seasonGames,prefix="league")
 	
 	for team in byTeam:
 		byTeam[team]["text"] = byTeam[team]["abbrev"] + " " + str(int(byTeam[team]["w"])) + "-" + str(byTeam[team]["l"]) + ", " + divOrdinal(byTeam[team]["pos"]) + " " + divShortName(byTeam[team]["div"]) + " (" + ((str(byTeam[team]["gb"]) + " GB") if byTeam[team]["gb"] >= 0.0 else ("+" + str(-byTeam[team]["gb"]) + " GA")) + ")"
@@ -307,7 +309,7 @@ def pullStandings(msXML, standingsUrlTemplate, scheduleDT):
 				
 	return byTeam
 
-def doStandingsMagic(byDivList,prefix=""):
+def doStandingsMagic(byDivList,seasonGames,prefix=""):
 
 	for k in sorted(byDivList,key=lambda div: re.sub("Central","Middle",div)): # so we get E/C/W
 	
@@ -349,11 +351,11 @@ def doStandingsMagic(byDivList,prefix=""):
 			team[prefix+"gb"] = -topGB
 			
 		# start populating magic number at 2/3 mark for first-place
-		if ((byDivList[k][0]["w"] + byDivList[k][0]["l"]) >= (2*LEAGUE_GAMES/3.0)):
-			byDivList[k][0][prefix+"magic"] = (LEAGUE_GAMES+1) - (byDivList[k][0]["w"] + byDivList[k][1]["l"])
+		if ((byDivList[k][0]["w"] + byDivList[k][0]["l"]) >= (2*seasonGames/3.0)):
+			byDivList[k][0][prefix+"magic"] = (seasonGames+1) - (byDivList[k][0]["w"] + byDivList[k][1]["l"])
 			for ln in range(1,len(byDivList[k])):
 				if byDivList[k][ln][prefix+"pos"] == "T-1":
-					byDivList[k][ln][prefix+"magic"] = (LEAGUE_GAMES+1) - (byDivList[k][ln]["w"] + byDivList[k][0]["l"])
+					byDivList[k][ln][prefix+"magic"] = (seasonGames+1) - (byDivList[k][ln]["w"] + byDivList[k][0]["l"])
 	
 	return byDivList
 	
