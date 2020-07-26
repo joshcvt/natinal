@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # NATINAL
-# (c) 2016-19 J. W. Crockett, Jr., josh.crockett@gmail.com
+# (c) 2016-20 J. W. Crockett, Jr., josh.crockett@gmail.com
 
 # Not
 # Another
@@ -239,7 +239,7 @@ def pullLineupsXml(gameId,xmlUrl):
 		
 def pullStandings(msXML, standingsUrlTemplate, scheduleDT):
 	
-	baseStandingsUrl = Template(standingsUrlTemplate).substitute(year=scheduleDT.strftime("%Y"),slashDate=scheduleDT.strftime("%Y/%m/%d"))
+	baseStandingsUrl = scheduleDT.strftime(standingsUrlTemplate)
 	logging.debug("Getting standings URL" + baseStandingsUrl)
 	byTeam = {}
 	byDivList = {}
@@ -250,23 +250,23 @@ def pullStandings(msXML, standingsUrlTemplate, scheduleDT):
 		return None
 	# so let's continue
 	try:
-		baseLeagues = json.load(usock)["standings_schedule_date"]["standings_all_date_rptr"]["standings_all_date"]
+		baseDivisions = json.load(usock)["records"]
 	except Exception as e:
 		logging.error("JSON standings get/decode failed for standings URL " + baseStandingsUrl + ", " + traceback.format_exc(e))
 		return None
 	
-	for lg in baseLeagues:
-		lname = ("AL" if lg["league_id"] == "103" else "NL")
-		for team in lg["queryResults"]["row"]:
+	for div in baseDivisions:
+		lname = div["league"]["abbreviation"]   # AL or NL
+		for rec in div["teamRecords"]:
 			td = {}
-			td["abbrev"] = team["team_abbrev"]
+			td["abbrev"] = rec["team"]["abbreviation"]
 			td["league"] = lname
-			td["div"] = team["division"]
+			td["div"] = div["division"]["nameShort"]    # "AL West" form
 			# we'll do pct math ourselves. one of these needs to be a float to do that in Python 2
-			td["w"] = float(team["w"])
-			td["l"] = int(team["l"])
-			td["name"] = team["team_full"]
-			byTeam[team["team_abbrev"]] = td
+			td["w"] = float(rec["wins"])
+			td["l"] = int(rec["losses"])
+			td["name"] = rec["team"]["name"]
+			byTeam[td["abbrev"]] = td
 	
 	# now it's time to iterate over msXml to update this with current W/L. Yay!
 	for game in msXML.getElementsByTagName("game"):
@@ -790,7 +790,7 @@ def main():
 
 	if firstOfTheDay and masterScoreboardXml and (not args.date):
 		if isRegularSeason(masterScoreboardXml):
-			standings = pullStandings(masterScoreboardXml,standingsJsonUrl,todayDT)
+			standings = pullStandings(masterScoreboardXml,statsApiStandingsUrl,todayDT)
 		else:
 			standings = None
 		for team in validTeams:
@@ -848,7 +848,7 @@ def main():
 				if tomorrowScoreboardXml == None:
 					tomorrowScoreboardXml = loadMasterScoreboard(masterScoreboardUrl,(todayDT + timedelta(days=1)))
 					if isRegularSeason(masterScoreboardXml):
-						standings = pullStandings(masterScoreboardXml,standingsJsonUrl,todayDT)
+						standings = pullStandings(masterScoreboardXml,statsApiStandingsUrl,todayDT)
 				for teamId in newFinal["relevantteams"]:
 					probablesStr = getProbables(nextGame(teamId,newFinal["gamedir"],[masterScoreboardXml,tomorrowScoreboardXml],masterScoreboardUrl,6),tvTeam=teamId)
 					if probablesStr == None:
