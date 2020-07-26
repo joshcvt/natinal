@@ -17,7 +17,7 @@ statsApiScheduleUrl = "https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=%
 # replaces mobilexml highlights
 statsApiGameContentJsonUrl = "https://statsapi.mlb.com/api/v1/game/GAME_PK/content?language=en" 
 
-standingsJsonUrl = "http://mlb.mlb.com/lookup/json/named.standings_schedule_date.bam?season=${year}&schedule_game_date.game_date=%27${slashDate}%27&sit_code=%27h0%27&league_id=103&league_id=104&all_star_sw=%27N%27&version=2"
+statsApiStandingsUrl = "https://statsapi.mlb.com/api/v1/standings?leagueId=103,104&season=%Y&date=%Y-%m-%d&standingsTypes=regularSeason,springTraining,firstHalf,secondHalf&hydrate=division,conference,sport,league,team(nextSchedule(team,gameType=[R,F,D,L,W,C],inclusive=false),previousSchedule(team,gameType=[R,F,D,L,W,C],inclusive=true))"
 
 mlbTvBaseUrl = "https://www.mlb.com/tv/g{pk}"
 gamedayBaseUrl = "https://www.mlb.com/gameday/{pk}"
