@@ -235,7 +235,7 @@ def pullLineupsXml(gameId,xmlUrl):
 	logging.debug("returning from pullLineupsXml: " + str(lups))
 	return lups
 		
-def pullStandings(msXML, standingsUrlTemplate, scheduleDT):
+def pullStandings(msXML, standingsUrlTemplate, scheduleDT, newFinal=None):
 	
 	baseStandingsUrl = scheduleDT.strftime(standingsUrlTemplate)
 	logging.debug("Getting standings URL " + baseStandingsUrl)
@@ -243,6 +243,7 @@ def pullStandings(msXML, standingsUrlTemplate, scheduleDT):
 	byDivList = {}
 	byLeagueList = {}
 	usock = urllib.urlopen(baseStandingsUrl)
+	print baseStandingsUrl
 	if usock.getcode() != 200:
 		logging.error("Get base standings failed for standings URL " + baseStandingsUrl)
 		return None
@@ -255,7 +256,14 @@ def pullStandings(msXML, standingsUrlTemplate, scheduleDT):
 	
 	seasonGames = int(baseDivisions[0]["league"]["numGames"])
 	
+	if newFinal:    
+	    gameToFinalize = int(newFinal["gamePk"])
+	else:
+	    gameToFinalize = None
+	gameToAdd = None
+    	
 	for div in baseDivisions:
+		
 		lname = div["league"]["abbreviation"]   # AL or NL
 		if (int(div["league"]["numGames"]) != seasonGames):
 		    logging.error("We got variable season lengths (div/league/numGames) in standings URL " + baseStandingsUrl + ": " + str(seasonGames) + ", " + str(div["league"]["numGames"]))
@@ -269,19 +277,24 @@ def pullStandings(msXML, standingsUrlTemplate, scheduleDT):
 			td["l"] = int(rec["losses"])
 			td["name"] = rec["team"]["name"]
 			byTeam[td["abbrev"]] = td
-	
-	# now it's time to iterate over msXml to update this with current W/L. Yay!
-	for game in msXML.getElementsByTagName("game"):
-		home = game.getAttribute("home_name_abbrev")
-		away = game.getAttribute("away_name_abbrev")
-		if (home not in ('AL','NL')):	# catch All-Star Game special case
-			byTeam[home]["w"] = float(game.getAttribute("home_win"))
-			byTeam[home]["l"] = int(game.getAttribute("home_loss"))
-			byTeam[away]["w"] = float(game.getAttribute("away_win"))
-			byTeam[away]["l"] = int(game.getAttribute("away_loss"))
+			
+			if gameToFinalize:
+			    if rec["nextGameSchedule"]:
+			        if rec["nextGameSchedule"]["dates"]:
+			            for ngsdate in rec["nextGameSchedule"]["dates"]:
+			                for dategame in ngsdate["games"]:
+			                    if (int(dategame["gamePk"]) == gameToFinalize):
+			                        print "found it! woohoo! " + str(gameToFinalize)
+			                        if dategame["status"]["codedGameState"] == "I":
+			                            gameToAdd = dategame
+    			                    else:
+    			                        print "it's not in progress, we don't have to add it"
+			                        gameToFinalize = None
 	
 	# and now build byDivList and byLeagueList with updated data
 	for team in byTeam:
+	    if gameToAdd:
+	        
 		if byTeam[team]["div"] not in byDivList:
 			byDivList[byTeam[team]["div"]] = []
 		byDivList[byTeam[team]["div"]].append(byTeam[team])
@@ -544,7 +557,7 @@ def rollGames(msXML,teams,prefsDict,pDict):
 				logging.debug(statusStr)
 				if gameDataDir not in pDict["results"]["finals"].keys():
 					pDict["results"]["finals"][gameDataDir] = (gameDataDir, statusStr, datetime.strftime(datetime.utcnow(),"%c"))
-					finalDict = {"gamedir":gameDataDir,"final":statusStr,"reportTime":datetime.strftime(datetime.utcnow(),"%c")}
+					finalDict = {"gamedir":gameDataDir,"gamePk":gamePk,"final":statusStr}
 					
 					if highlightTeamId == BOTH:
 						finalDict["relevantteams"] = [home,away]
@@ -850,7 +863,7 @@ def main():
 				if tomorrowScoreboardXml == None:
 					tomorrowScoreboardXml = loadMasterScoreboard(masterScoreboardUrl,(todayDT + timedelta(days=1)))
 					if isRegularSeason(masterScoreboardXml):
-						standings = pullStandings(masterScoreboardXml,statsApiStandingsUrl,todayDT)
+						standings = None #pullStandings(masterScoreboardXml,statsApiStandingsUrl,todayDT,newFinal)
 				for teamId in newFinal["relevantteams"]:
 					probablesStr = getProbables(nextGame(teamId,newFinal["gamedir"],[masterScoreboardXml,tomorrowScoreboardXml],masterScoreboardUrl,6),tvTeam=teamId)
 					if probablesStr == None:
