@@ -277,9 +277,11 @@ def pullStandings(msXML, standingsUrlTemplate, scheduleDT, newFinal=None):
 			td["l"] = int(rec["losses"])
 			td["name"] = rec["team"]["name"]
 			byTeam[td["abbrev"]] = td
-			
+	
 	# and now build byDivList and byLeagueList with updated data
 	for team in byTeam:
+	    if gameToAdd:
+	        
 		if byTeam[team]["div"] not in byDivList:
 			byDivList[byTeam[team]["div"]] = []
 		byDivList[byTeam[team]["div"]].append(byTeam[team])
