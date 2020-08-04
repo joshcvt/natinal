@@ -243,7 +243,7 @@ def pullStandings(msXML, standingsUrlTemplate, scheduleDT, newFinal=None):
 	byDivList = {}
 	byLeagueList = {}
 	usock = urllib.urlopen(baseStandingsUrl)
-	print baseStandingsUrl
+	#print baseStandingsUrl
 	if usock.getcode() != 200:
 		logging.error("Get base standings failed for standings URL " + baseStandingsUrl)
 		return None
@@ -280,7 +280,6 @@ def pullStandings(msXML, standingsUrlTemplate, scheduleDT, newFinal=None):
 	
 	# and now build byDivList and byLeagueList with updated data
 	for team in byTeam:
-	    if gameToAdd:
 	        
 		if byTeam[team]["div"] not in byDivList:
 			byDivList[byTeam[team]["div"]] = []
@@ -292,22 +291,7 @@ def pullStandings(msXML, standingsUrlTemplate, scheduleDT, newFinal=None):
 
 	byDivList = doStandingsMagic(byDivList,seasonGames)
 	byLeagueList = doStandingsMagic(byLeagueList,seasonGames,prefix="league")
-	
-	for team in byTeam:
-	    if gameToAdd:
-	        
-		if byTeam[team]["div"] not in byDivList:
-			byDivList[byTeam[team]["div"]] = []
-		byDivList[byTeam[team]["div"]].append(byTeam[team])
-		if byTeam[team]["league"] not in byLeagueList:
-			byLeagueList[byTeam[team]["league"]] = []
-		byLeagueList[byTeam[team]["league"]].append(byTeam[team])
-		# this leaves the structures pointing to the same team objects.  this will be useful.
 		
-	byDivList = doStandingsMagic(byDivList,seasonGames)
-
-	byLeagueList = doStandingsMagic(byLeagueList,seasonGames,prefix="league")
-	
 	for team in byTeam:
 		byTeam[team]["text"] = byTeam[team]["abbrev"] + " " + str(int(byTeam[team]["w"])) + "-" + str(byTeam[team]["l"]) + ", " + divOrdinal(byTeam[team]["pos"]) + " " + divShortName(byTeam[team]["div"]) + " (" + ((str(byTeam[team]["gb"]) + " GB") if byTeam[team]["gb"] >= 0.0 else ("+" + str(-byTeam[team]["gb"]) + " GA")) + ")"
 		if "magic" in byTeam[team]:
