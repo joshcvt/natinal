@@ -278,20 +278,19 @@ def pullStandings(msXML, standingsUrlTemplate, scheduleDT, newFinal=None):
 			td["name"] = rec["team"]["name"]
 			byTeam[td["abbrev"]] = td
 			
-			if gameToFinalize:
-			    if rec["nextGameSchedule"]:
-			        if rec["nextGameSchedule"]["dates"]:
-			            for ngsdate in rec["nextGameSchedule"]["dates"]:
-			                for dategame in ngsdate["games"]:
-			                    if (int(dategame["gamePk"]) == gameToFinalize):
-			                        print "found it! woohoo! " + str(gameToFinalize)
-			                        if dategame["status"]["codedGameState"] == "I":
-			                            gameToAdd = dategame
-    			                    else:
-    			                        print "it's not in progress, we don't have to add it"
-			                        gameToFinalize = None
-	
 	# and now build byDivList and byLeagueList with updated data
+	for team in byTeam:
+		if byTeam[team]["div"] not in byDivList:
+			byDivList[byTeam[team]["div"]] = []
+		byDivList[byTeam[team]["div"]].append(byTeam[team])
+		if byTeam[team]["league"] not in byLeagueList:
+			byLeagueList[byTeam[team]["league"]] = []
+		byLeagueList[byTeam[team]["league"]].append(byTeam[team])
+		# this leaves the structures pointing to the same team objects.  this will be useful.
+
+	byDivList = doStandingsMagic(byDivList,seasonGames)
+	byLeagueList = doStandingsMagic(byLeagueList,seasonGames,prefix="league")
+	
 	for team in byTeam:
 	    if gameToAdd:
 	        
