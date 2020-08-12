@@ -90,7 +90,7 @@ def getScoreline(game):
 			pass
 		return statusStr
 		
-	elif statusAttr in SUSPENDED_STATUS_CODES:
+	elif ((statusAttr in SUSPENDED_STATUS_CODES) or statusAttr.startswith(SUSPENDED_LEADER)):
 		statusStr = "Suspended game"
 	else:
 		statusStr = "Final"
@@ -799,9 +799,10 @@ def main():
 				while game != None:
 					gddir = game.getAttribute("game_data_directory")
 					logging.debug("got a game for " + team + ": " + gddir)
-					if game.getElementsByTagName("status")[0].getAttribute("status") in SUSPENDED_STATUS_CODES:
+					thisGameStatusAttr = game.getElementsByTagName("status")[0].getAttribute("status")
+					if ((thisGameStatusAttr in SUSPENDED_STATUS_CODES) or thisGameStatusAttr.startswith(SUSPENDED_LEADER)):
 						morningAnnounce.append(getScoreline(game) + " resumes " + game.getAttribute("time") + " " + game.getAttribute("home_ampm") + ".")
-					elif game.getElementsByTagName("status")[0].getAttribute("status") in POSTPONED_STATUS_CODES:
+					elif thisGameStatusAttr in POSTPONED_STATUS_CODES:
 						morningAnnounce.append(getScoreline(game))
 					else:
 						logging.debug("in the got a game else branch")
