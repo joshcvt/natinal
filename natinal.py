@@ -90,7 +90,7 @@ def getScoreline(game):
 			pass
 		return statusStr
 		
-	elif ((statusAttr in SUSPENDED_STATUS_CODES) or statusAttr.startswith(SUSPENDED_LEADER)):
+	elif ((statusAttr in SUSPENDED_STATUS_CODES) or statusAttr.lower().startswith(SUSPENDED_LEADER.lower())):
 		statusStr = "Suspended game"
 	else:
 		statusStr = "Final"
@@ -496,7 +496,7 @@ def rollGames(msXML,teams,prefsDict,pDict):
 						pDict["upcoming"].append(gameId)
 						newResults["lineups"].append(lineups)
 			
-			if statusAttr in ANNOUNCE_STATUS_CODES or ("announce" in pDict and gameId in pDict["announce"]):
+			if statusAttr in ANNOUNCE_STATUS_CODES or statusAttr.startswith(DELAYED_LEADER) or statusAttr.startswith(SUSPENDED_LEADER) or ("announce" in pDict and gameId in pDict["announce"]):
 				gameNowStr = " now " + statusAttr.lower()
 				if statusElement.getAttribute("reason") != "":
 					gameNowStr = gameNowStr + " (" + statusElement.getAttribute("reason") + ")"
@@ -505,7 +505,7 @@ def rollGames(msXML,teams,prefsDict,pDict):
 				if gameId in pDict["announce"]:
 					if statusAttr != pDict["announce"][gameId]:
 						# we've transitioned out of something.
-						if statusAttr in ANNOUNCE_STATUS_CODES:
+						if statusAttr in ANNOUNCE_STATUS_CODES or statusAttr.startswith(DELAYED_LEADER) or statusAttr.startswith(SUSPENDED_LEADER):
 							pDict["announce"][gameId] = statusAttr
 							newResults["announce"].append(gameStr + gameNowStr)
 						else:
