@@ -45,6 +45,7 @@ ANNOUNCE_STATUS_CODES = ["Delayed Start", "Postponed", "Delayed"]
 POSTPONED_STATUS_CODES = ["Postponed"]
 SUSPENDED_STATUS_CODES = ["Suspended"]
 SUSPENDED_LEADER = "Suspended"
+DELAYED_LEADER = "Delayed"
 
 # for resetter.  gives various ways the team can be addressed
 # including more phonetic representations for Alexa possibility
