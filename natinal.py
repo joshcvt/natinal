@@ -64,7 +64,7 @@ def divShortName(teamDiv):
 		divre = re.search(r'(\w)\w+ League (\w+)',teamDiv)
 		divShort = divre.groups()[0] + "L " + divre.groups()[1]
 		return divShort
-	except Exception, e:
+	except Exception as e:
 		return teamDiv
 		
 def gidizeGameId(gameId):
@@ -198,7 +198,7 @@ def pullLineupsXml(gameId,xmlUrl):
 			logging.debug("Exiting pullLineupsXml with usock.getcode() == " + str(usock.getcode()) + " " + exactXmlUrl)
 			return None
 		boxscoreXml = parse(usock)
-	except Exception, e:
+	except Exception as e:
 		logging.info("Exiting pullLineupsXml during parse with exception " + traceback.format_exc(e)+ " " + exactXmlUrl)
 		return None
 	
@@ -657,7 +657,7 @@ def getProbables(game,standings=None,stripDate=False,tvTeam=None):
 		try:
 			bcast = game.getElementsByTagName("broadcast")[0].getElementsByTagName(bc)[0].getElementsByTagName("tv")[0].childNodes[0].data
 			runningStr += "\nTV: " + bcast
-		except Exception, e:
+		except Exception as e:
 			logging.debug("bcast takeapart failed, probably means no TV: " + str(e))
 				
 	if standings:
@@ -690,7 +690,7 @@ def main():
 
 	config = ConfigParser.RawConfigParser()
 	if args.config:
-		print "running as config: " + args.config
+		print("running as config: " + args.config)
 		config.readfp(open(args.config))
 	else:
 		config.readfp(open(configFN))
@@ -744,7 +744,7 @@ def main():
 	try:
 		prefsDict["suppressStatcast"] = config.getboolean("general","suppressStatcast")
 	except ValueError:
-		prefsDict["suppressStatcast"] = false
+		prefsDict["suppressStatcast"] = False
 
 	persistDict = {}
 	firstOfTheDay = False
@@ -882,7 +882,7 @@ def main():
 					else:
 						persistDict["staleResults"][vn.header] = stillStale
 			vn.pushResults(newResults)			
-		except Exception, e:
+		except Exception as e:
 			if "staleResults" not in persistDict:
 				persistDict["staleResults"] = {}
 			if vn.header not in persistDict["staleResults"]:
