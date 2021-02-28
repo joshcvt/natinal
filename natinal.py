@@ -535,7 +535,7 @@ def rollGames(msXML,teams,prefsDict,pDict):
 				# moved all this out for clarity
 				(pDict, newResults) = pullHighlights(gamePk, highlightTeamId, prefsDict, pDict, newResults)
 
-			if statusAttr in FINAL_STATUS_CODES:
+			if statusAttr in FINAL_STATUS_CODES or statusAttr.startsWith(FINAL_LEADER):
 		
 				statusStr = getScoreline(game)
 				
@@ -728,11 +728,11 @@ def main():
 	todayStr = todayDT.strftime("%Y-%m-%d")
 
 	try:
-		masterScoreboardUrl = re.sub("LEAGUEBLOCK",config.get("general","league"),leagueAgnosticMasterScoreboardUrl)
+		masterScoreboardUrl = leagueAgnosticMasterScoreboardUrl.replace("{league}",config.get("general","league"))
 		if config.get("general","league") not in validLeagues:
 			raise ValueError("league not in permissible leagues")
 	except (ConfigParser.NoOptionError, ValueError):
-		masterScoreboardUrl = re.sub("LEAGUEBLOCK","mlb",leagueAgnosticMasterScoreboardUrl)
+		masterScoreboardUrl = leagueAgnosticMasterScoreboardUrl.replace("{league}","mlb")
 
 	prefsDict = {}
 	try:

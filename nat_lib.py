@@ -9,7 +9,7 @@ leagueAgnosticTeamDirectoryUrl = "http://mlb.com/lookup/xml/named.team_all.bam?s
 teamDirectoryUrl = leagueAgnosticTeamDirectoryUrl.replace("{league}","mlb")
 
 # exists unless there are no games scheduled that day
-leagueAgnosticMasterScoreboardUrl = "http://gd2.mlb.com/components/game/LEAGUEBLOCK/year_%Y/month_%m/day_%d/master_scoreboard.xml"
+leagueAgnosticMasterScoreboardUrl = "http://gd2.mlb.com/components/game/{league}/year_%Y/month_%m/day_%d/master_scoreboard.xml"
 validLeagues = ["mlb","aaa","aax","afa","afx","asx","rok"] # in descending order
 
 statsApiScheduleUrl = "https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=%Y-%m-%d&leagueId=103,104&hydrate=team,linescore(runners),flags,liveLookin,review,game(content(summary,media(epg)),tickets),seriesStatus(useOverride=true),broadcasts(all)&useLatestGames=false&language=en"
@@ -40,12 +40,13 @@ INACTIVE_GAME_STATUS_CODES = ["Postponed", "Pre-Game", "Preview", "Warmup"]
 PREGAME_STATUS_CODES = ["Pre-Game", "Preview", "Warmup", "Delayed Start"]
 UPCOMING_STATUS_CODES = ["Pre-Game", "Warmup"]
 UNDERWAY_STATUS_CODES = ["In Progress", "Manager Challenge", "Review"]
-FINAL_STATUS_CODES = ["Final", "Game Over", "Completed Early", "Completed Early: Rain"]
+FINAL_STATUS_CODES = ["Final", "Game Over", "Completed Early", "Completed Early: Rain", "Final: Tied"]
 ANNOUNCE_STATUS_CODES = ["Delayed Start", "Postponed", "Delayed"]
 POSTPONED_STATUS_CODES = ["Postponed"]
 SUSPENDED_STATUS_CODES = ["Suspended"]
 SUSPENDED_LEADER = "Suspended"
 DELAYED_LEADER = "Delayed"
+FINAL_LEADER = "Final"
 
 # for resetter.  gives various ways the team can be addressed
 # including more phonetic representations for Alexa possibility
