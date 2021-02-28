@@ -749,8 +749,8 @@ def main():
 	persistDict = {}
 	firstOfTheDay = False
 	try:
-		with open(persistFN) as opentest:
-			persistDict = json.load(file(persistFN))
+		with open(persistFN) as persistFile:
+			persistDict = json.load(persistFile)
 		if type(persistDict) != dict:
 			raise ValueError("persistFN has invalid data type")
 	except IOError:
@@ -892,7 +892,8 @@ def main():
 
 	try:
 		json.dumps(persistDict)
-		json.dump(persistDict,file(persistFN,'w'),indent=2)
+		with open(persistFN,'w') as persistFile:
+			json.dump(persistDict,persistFile,indent=2)
 	except TypeError as e:
 		# dumps will trip this, keeping us from blowing away the persistFN
 		logging.error("persistDict failed serialization. what's up? " + traceback.format_exc(e))
