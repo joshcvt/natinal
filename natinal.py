@@ -535,7 +535,7 @@ def rollGames(msXML,teams,prefsDict,pDict):
 				# moved all this out for clarity
 				(pDict, newResults) = pullHighlights(gamePk, highlightTeamId, prefsDict, pDict, newResults)
 
-			if statusAttr in FINAL_STATUS_CODES or statusAttr.startsWith(FINAL_LEADER):
+			if statusAttr in FINAL_STATUS_CODES or statusAttr.startswith(FINAL_LEADER):
 		
 				statusStr = getScoreline(game)
 				
