@@ -8,7 +8,7 @@
 **A**bout the  
 **L**ineups!<sup><a href="#footnote1">1</a></sup>
 
-(c) 2016-20 J. W. Crockett, Jr.<sup><a href="#footnote2">2</a></sup>, [@joshcvt](http://twitter.com/joshcvt)
+(c) 2016-21 J. W. Crockett, Jr.<sup><a href="#footnote2">2</a></sup>, [@joshcvt](http://twitter.com/joshcvt)
 
 **natinal** is a Python 2 script to monitor MLB.com live gameday data feeds.  Run as a cron job, it relays certain gameday events and highlight video links to a configured set of services.
 

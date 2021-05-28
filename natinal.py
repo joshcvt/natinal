@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # NATINAL
-# (c) 2016-20 J. W. Crockett, Jr., josh.crockett@gmail.com
+# (c) 2016-21 J. W. Crockett, Jr., josh.crockett@gmail.com
 
 # Not
 # Another
@@ -462,22 +462,6 @@ def rollGames(msXML,teams,prefsDict,pDict):
 			else:	# home in teams
 				highlightTeamId = teams[home]
 				highlightTeamName = home
-
-			# now, toss out games that are completed and not today. 
-			dateStr = "-".join(gameId.split("/")[0:3])
-			if dateStr != pDict["todayStr"]:
-				if statusAttr in FINAL_STATUS_CODES:
-					logging.info("tossing out completed nontoday game " + gameId)
-					continue
-				else:
-					backtalk = "Incomplete non-today game found: " + gameId + " in msxml"
-					logging.warn(backtalk)
-					if "backtalk" not in pDict:
-						pDict["backtalk"] = [backtalk]
-					if backtalk not in pDict["backtalk"]:
-						pDict["backtalk"].append(backtalk)
-						newResults["backtalk"].append(backtalk)
-					# else it's already in
 		
 			# if it's in probables and probables are still relevant:
 			if gameDataDir in pDict["results"]["probables"].keys():
