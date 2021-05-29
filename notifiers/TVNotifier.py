@@ -1,4 +1,4 @@
-from NotifierClass import Notifier
+from .NotifierClass import Notifier
 
 import twitter
 import re
@@ -20,7 +20,7 @@ class TVNotifier(Notifier):
 	def pushResults(self,newres):
 		# the only thing this cares about is the final, and *that* only matters once x minutes have passed.
 		
-		if "morningAnnounce" in newres.keys() and len(newres["morningAnnounce"]) > 0:
+		if "morningAnnounce" in list(newres.keys()) and len(newres["morningAnnounce"]) > 0:
 			toTweet = []
 			for game in newres["morningAnnounce"]:
 				lines = game.split("\n")

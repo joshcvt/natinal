@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import urllib2, json, traceback # ConfigParser, argparse	     #, logging
+import urllib.request, urllib.error, urllib.parse, json, traceback # ConfigParser, argparse	     #, logging
 from datetime import timedelta, datetime, date
 from string import join
 import xml.etree.ElementTree as ET
@@ -151,18 +151,18 @@ def loadMasterScoreboard(msURL,scheduleDT):
 	scheduleUrl = scheduleDT.strftime(msURL)
 	
 	try:
-		usock = urllib2.urlopen(scheduleUrl,timeout=10)
+		usock = urllib.request.urlopen(scheduleUrl,timeout=10)
 		msTree = ET.parse(usock)
 		return msTree
 
 	#except socket.timeout as e:
-	except urllib2.HTTPError as e:
-		print "HTTP " + str(e.code) + " on URL: " + scheduleUrl
+	except urllib.error.HTTPError as e:
+		print("HTTP " + str(e.code) + " on URL: " + scheduleUrl)
 		#if e.code in (404,403,500,410):
 		#elif e.code != 200:
 	#except urllib2.URLError as e:
 	except Exception as e:
-		print "WENT WRONG: " + e.__module__ + "." + e.__class__.__name__
+		print("WENT WRONG: " + e.__module__ + "." + e.__class__.__name__)
 	
 	return None
 
@@ -209,8 +209,8 @@ def getProbables(g,tvTeam=None):
 				runningStr += " TV broadcast is on " + bcast + "."
 			else:
 				runningStr += " No TV."
-		except Exception, e:
-			print "bcast exception:" + str(e)
+		except Exception as e:
+			print("bcast exception:" + str(e))
 			pass	
 	
 	return runningStr

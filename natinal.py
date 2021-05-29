@@ -15,7 +15,7 @@
 
 # Please note http://gdx.mlb.com/components/copyright.txt, which covers the data sources owned by MLB Advanced Media, L.P. ("MLBAM") that this application consumes. The developer of this application claims no rights to or control over these sources or the data contained within. Users of this application are themselves solely responsible for assuring that their use of this application, the sources and the data contained within complies with any and all terms and conditions set by MLBAM.
 
-import xml.dom, urllib, ConfigParser, json, logging, traceback, re, argparse
+import xml.dom, urllib.request, urllib.parse, urllib.error, configparser, json, logging, traceback, re, argparse
 from datetime import timedelta, datetime
 from string import Template
 from xml.dom.minidom import parse
@@ -127,7 +127,7 @@ def pullHighlights(gamePk, highlightTeamId, prefsDict, pDict, newResults):
 	
 	thisHighlightsUrl = statsApiGameContentJsonUrl.replace("GAME_PK",gamePk)
 	logging.debug("Getting highlights URL: " + thisHighlightsUrl)
-	usock = urllib.urlopen(thisHighlightsUrl)
+	usock = urllib.request.urlopen(thisHighlightsUrl)
 	if usock.getcode() != 200:
 		# highlights file doesn't appear until there are highlights. fail softly.
 		logging.debug("highlights get failed for " + thisHighlightsUrl)
@@ -156,7 +156,7 @@ def pullHighlights(gamePk, highlightTeamId, prefsDict, pDict, newResults):
 						else:
 							logging.debug("highlight: " + blurb + ", video: " + mp4)
  
-							if media["mediaPlaybackId"] not in pDict["results"]["highlights"].keys():
+							if media["mediaPlaybackId"] not in list(pDict["results"]["highlights"].keys()):
 								pDict["results"]["highlights"][media["mediaPlaybackId"]] = (blurb,mp4)
 								if ((prefsDict["suppressStatcast"] == False) or (("statcast" in blurb.lower()) == False)):
 									newResults["highlights"].append((blurb,mp4))
@@ -193,7 +193,7 @@ def pullLineupsXml(gameId,xmlUrl):
 		gameId = gidizeGameId(gameId)
 		exactXmlUrl = Template(xmlUrl).substitute(year=yr,month=mo,day=dy,game_id=gameId)
 		logging.debug("getting lineup for " + gameId + " from " + exactXmlUrl)
-		usock = urllib.urlopen(exactXmlUrl)
+		usock = urllib.request.urlopen(exactXmlUrl)
 		if usock.getcode() != 200:
 			logging.debug("Exiting pullLineupsXml with usock.getcode() == " + str(usock.getcode()) + " " + exactXmlUrl)
 			return None
@@ -242,7 +242,7 @@ def pullStandings(msXML, standingsUrlTemplate, scheduleDT, newFinal=None):
 	byTeam = {}
 	byDivList = {}
 	byLeagueList = {}
-	usock = urllib.urlopen(baseStandingsUrl)
+	usock = urllib.request.urlopen(baseStandingsUrl)
 	#print baseStandingsUrl
 	if usock.getcode() != 200:
 		logging.error("Get base standings failed for standings URL " + baseStandingsUrl)
@@ -364,7 +364,7 @@ def loadMasterScoreboard(msURL, scheduleDT, msOverrideFN=None):
 		scheduleUrl = scheduleDT.strftime(msURL)
 		
 		logging.debug("Opening scheduleUrl: " + scheduleUrl)
-		usock = urllib.urlopen(scheduleUrl)
+		usock = urllib.request.urlopen(scheduleUrl)
 		if (usock.getcode() == 404):
 			logging.info("Schedule not found. Either there are no games today or MLBAM has changed the master scoreboard URL.\n")
 			return None
@@ -401,7 +401,7 @@ def pullValidTeams(cfgParser,teamDirUrl,pDict):
 	
 	teamIdDir = {}
 	if "teamIdDir" not in pDict:
-		usock = urllib.urlopen(teamDirUrl)
+		usock = urllib.request.urlopen(teamDirUrl)
 		if (usock.getcode() != 200):
 			logging.error("Master team directory not found, error " + str(usock.getcode()) + ", URL:\n\t" + teamDirUrl)
 			quit
@@ -425,7 +425,7 @@ def pullValidTeams(cfgParser,teamDirUrl,pDict):
 	if len(teamsBad) > 0:
 		logging.error("Bad team[s] requested: " + str(teamsBad) + ", quitting.")
 		quit()
-	if len(teams.keys()) == 0:
+	if len(list(teams.keys())) == 0:
 		logging.info("No team[s] requested. Only scanning league results (if that's even been written yet).")
 	return (teams,pDict)
 
@@ -464,7 +464,7 @@ def rollGames(msXML,teams,prefsDict,pDict):
 				highlightTeamName = home
 		
 			# if it's in probables and probables are still relevant:
-			if gameDataDir in pDict["results"]["probables"].keys():
+			if gameDataDir in list(pDict["results"]["probables"].keys()):
 				if statusAttr in UNDERWAY_STATUS_CODES:
 					del pDict["results"]["probables"][gameDataDir]
 				elif statusAttr in PREGAME_STATUS_CODES and not gameProbablesNull(game):
@@ -524,7 +524,7 @@ def rollGames(msXML,teams,prefsDict,pDict):
 				statusStr = getScoreline(game)
 				
 				logging.debug(statusStr)
-				if gameDataDir not in pDict["results"]["finals"].keys():
+				if gameDataDir not in list(pDict["results"]["finals"].keys()):
 					pDict["results"]["finals"][gameDataDir] = (gameDataDir, statusStr, datetime.strftime(datetime.utcnow(),"%c"))
 					finalDict = {"gamedir":gameDataDir,"gamePk":gamePk,"final":statusStr}
 					
@@ -675,9 +675,9 @@ def main():
 
 	masterScoreboardOverride = args.file	# == None if not passed, which works
 
-	config = ConfigParser.RawConfigParser()
+	config = configparser.RawConfigParser()
 	if args.config:
-		print("running as config: " + args.config)
+		print(("running as config: " + args.config))
 		config.readfp(open(args.config))
 	else:
 		config.readfp(open(configFN))
@@ -718,7 +718,7 @@ def main():
 		masterScoreboardUrl = leagueAgnosticMasterScoreboardUrl.replace("{league}",config.get("general","league"))
 		if config.get("general","league") not in validLeagues:
 			raise ValueError("league not in permissible leagues")
-	except (ConfigParser.NoOptionError, ValueError):
+	except (configparser.NoOptionError, ValueError):
 		masterScoreboardUrl = leagueAgnosticMasterScoreboardUrl.replace("{league}","mlb")
 
 	prefsDict = {}
@@ -747,7 +747,7 @@ def main():
 		persistDict = {}
 
 	if "todayStr" not in persistDict or ("todayStr" in persistDict and persistDict["todayStr"] != todayStr):
-		for k in persistDict.keys():
+		for k in list(persistDict.keys()):
 			if k != "teamIdDir":
 				# clear everything but the team ID directory in the morning
 				persistDict.pop(k,None)
