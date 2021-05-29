@@ -625,13 +625,16 @@ def getProbables(game,standings=None,stripDate=False,tvTeam=None):
 	runningStr = re.sub(subToken+"$",", ",runningStr)
 	runningStr = re.sub(subToken," at ", runningStr)
 	gtime = re.sub("^(\d+)\/","",game.getAttribute("time_date"))
-	if gtime.endswith("3:33"):
+	if gtime.endswith("3:33"):	# MLBAM magic constant ahoy!
 		gtime = gtime[:-5] + " time TBA"
 	else:
 		gtime += " " + game.getAttribute("time_zone")
 	runningStr += gtime
 	if stripDate:
 		runningStr = re.sub("\, \d+\/\d+",",",runningStr)
+	scheduledInnings = game.getAttribute("scheduled_innings")
+	if scheduledInnings != "9":
+		runningStr += " (" + scheduledInnings + " innings)"
 	
 	if tvTeam:
 		# lazy default here
@@ -801,6 +804,7 @@ def main():
 			except Exception as e:
 				logging.error("firstOfTheDay failed for " + team + ", " + traceback.format_exc(e))
 		logging.debug("it's firstOfTheDay, morningAnnounce looks like " + str(morningAnnounce))
+		# note that you will not get a morningAnnounce if your team's game has already started before your firstOfTheDay run.
 	
 	elif masterScoreboardXml: # args.date will hit here
 		(newResults,persistDict) = rollGames(masterScoreboardXml,validTeams,prefsDict,persistDict)
