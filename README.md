@@ -10,7 +10,7 @@
 
 (c) 2016-21 J. W. Crockett, Jr.<sup><a href="#footnote2">2</a></sup>, [@joshcvt](http://twitter.com/joshcvt)
 
-**natinal** is a Python 2 script to monitor MLB.com live gameday data feeds.  Run as a cron job, it relays certain gameday events and highlight video links to a configured set of services.
+**natinal** is a Python 3.9 script to monitor MLB.com live gameday data feeds.  Run as a cron job, it relays certain gameday events and highlight video links to a configured set of services.
 
 **Background**: I'm part of a long-running private chat that formed around the [Washington Nationals](http://nationals.com) during their inaugural season, which now lives on Slack.  **natinal** was created first to provide that chat links to downloadable video highlights, rather than us having to sniff JSON on MLB.com directly.  It quickly grew the ability to provide us morning announcements of the day's probables, lineup announcements and probables updates, broadcast info, and final score/standings/magic number (when relevant) announcements postgame via a [Slack webhook](https://api.slack.com/incoming-webhooks) helpfully named `natinal_bot`.  This instance runs as a cron job on a Raspberry Pi with minimal trouble as long as the power stays on.
 
