@@ -876,7 +876,7 @@ def main():
 			if vn.header not in persistDict["staleResults"]:
 				persistDict["staleResults"][vn.header] = []
 			persistDict["staleResults"][vn.header].append(newResults)
-			logging.error(traceback.format_exc(e))
+			logging.exception(e)
 
 	try:
 		json.dumps(persistDict)
