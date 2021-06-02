@@ -15,7 +15,7 @@
 
 # Please note http://gdx.mlb.com/components/copyright.txt, which covers the data sources owned by MLB Advanced Media, L.P. ("MLBAM") that this application consumes. The developer of this application claims no rights to or control over these sources or the data contained within. Users of this application are themselves solely responsible for assuring that their use of this application, the sources and the data contained within complies with any and all terms and conditions set by MLBAM.
 
-import xml.dom, urllib.request, urllib.parse, urllib.error, configparser, json, logging, traceback, re, argparse
+import xml.dom, urllib.request, urllib.parse, urllib.error, configparser, json, logging, re, argparse
 from datetime import timedelta, datetime
 from string import Template
 from xml.dom.minidom import parse
@@ -199,7 +199,8 @@ def pullLineupsXml(gameId,xmlUrl):
 			return None
 		boxscoreXml = parse(usock)
 	except Exception as e:
-		logging.info("Exiting pullLineupsXml during parse with exception " + traceback.format_exc(e)+ " " + exactXmlUrl)
+		logging.info("Exiting pullLineupsXml during parse " + exactXmlUrl)
+		logging.exception(e)
 		return None
 	
 	bxElem = boxscoreXml.getElementsByTagName("boxscore")[0]
@@ -251,7 +252,8 @@ def pullStandings(msXML, standingsUrlTemplate, scheduleDT, newFinal=None):
 	try:
 		baseDivisions = json.load(usock)["records"]
 	except Exception as e:
-		logging.error("JSON standings get/decode failed for standings URL " + baseStandingsUrl + ", " + traceback.format_exc(e))
+		logging.error("JSON standings get/decode failed for standings URL " + baseStandingsUrl)
+		logging.exception(e)
 		return None
 	
 	seasonGames = int(baseDivisions[0]["league"]["numGames"])
@@ -379,7 +381,8 @@ def loadMasterScoreboard(msURL, scheduleDT, msOverrideFN=None):
 		masterScoreboardXml = parse(usock)
 		usock.close()
 	except Exception as e:
-		logging.error("MSXML parse failed on " + (msOverrideFN if msOverrideFN else ("URL:\n\t" + scheduleUrl)) + "\n" + traceback.format_exc(e))
+		logging.error("MSXML parse failed on " + (msOverrideFN if msOverrideFN else ("URL:\n\t" + scheduleUrl)))
+		logging.exception(e)
 		usock.close()
 		return None
 
@@ -686,7 +689,7 @@ def main():
 		persistFN = config.get("general","persist_dict_fn")
 		logFN = config.get("general","log_fn")
 	except Exception as e:
-		quit("Couldn't get critical file paths: " + traceback.format_exc(e))
+		quit("Couldn't get critical file paths: " + str(e))
 
 	global logLevel
 	try:
@@ -802,7 +805,8 @@ def main():
 								morningAnnounce.append(gameProbsWithStandings)
 					game = nextGame(team,gddir,[masterScoreboardXml])
 			except Exception as e:
-				logging.error("firstOfTheDay failed for " + team + ", " + traceback.format_exc(e))
+				logging.error("firstOfTheDay failed for " + team + ": ")
+				logging.exception(e)
 		logging.debug("it's firstOfTheDay, morningAnnounce looks like " + str(morningAnnounce))
 		# note that you will not get a morningAnnounce if your team's game has already started before your firstOfTheDay run.
 	
@@ -884,5 +888,6 @@ def main():
 			json.dump(persistDict,persistFile,indent=2)
 	except TypeError as e:
 		# dumps will trip this, keeping us from blowing away the persistFN
-		logging.error("persistDict failed serialization. what's up? " + traceback.format_exc(e))
+		logging.error("persistDict failed serialization. what's up? ")
 		logging.error(persistDict)
+		logging.exception(e)
