@@ -143,7 +143,7 @@ class SlackNotifier(Notifier):
 			if self.useEasterEggs and ("text" in payloadDict) and re.search("Roark",payloadDict["text"]) and re.search("Washington|WSH",payloadDict["text"]):
 				if (random.randint(0,9) == 0):
 					payloadDict["text"] = re.sub("(Tanner |)Roark","STAFF ACE Tanner Roark",payloadDict["text"])
-			data = urllib.parse.urlencode({"payload": json.dumps(payloadDict)})
+			data = urllib.parse.urlencode({"payload": json.dumps(payloadDict)}).encode('utf-8')
 			logging.debug("about to request " + json.dumps(payloadDict) + "\n" + data + "\nat " + self.webhook)
 			req = urllib.request.Request(self.webhook, data)
 			response = urllib.request.urlopen(req)
