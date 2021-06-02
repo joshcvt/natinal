@@ -1,5 +1,5 @@
 from .NotifierClass import Notifier
-import urllib.request, urllib.parse, urllib.error, urllib.request, urllib.error, urllib.parse, traceback, logging, json, re, random
+import urllib.request, urllib.parse, urllib.error, urllib.request, urllib.error, urllib.parse, logging, json, re, random
 from urllib.parse import urlsplit
 
 class SlackNotifier(Notifier):
@@ -149,5 +149,6 @@ class SlackNotifier(Notifier):
 			response = urllib.request.urlopen(req)
 			logging.debug(response.read())
 		except Exception as e:
-			logging.error("Couldn't post for some reason:\n" + traceback.format_exc(e))
+			logging.error("Couldn't post for some reason:")
+			logging.exception(e)
 			return
