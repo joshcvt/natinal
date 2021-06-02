@@ -13,8 +13,8 @@ for path_name in os.listdir(directory):
 			#print "yo, importing " + module_name
 			try:
 				__import__(module_name)
-			except Exception, e:
-				print "\tFAILED! importing " + module_name, e
+			except Exception as e:
+				print("\tFAILED! importing " + module_name, e)
 				# don't halt on one notifier import failing. In some cases that's OK -- for
 				# example, a Twitter notifier may need a dependency you don't want to install
 				# if you're not going to use Twitter.

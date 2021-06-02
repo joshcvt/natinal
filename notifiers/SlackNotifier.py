@@ -1,6 +1,6 @@
-from NotifierClass import Notifier
-import urllib, urllib2, traceback, logging, json, re, random
-from urlparse import urlsplit
+from .NotifierClass import Notifier
+import urllib.request, urllib.parse, urllib.error, urllib.request, urllib.error, urllib.parse, logging, json, re, random
+from urllib.parse import urlsplit
 
 class SlackNotifier(Notifier):
 	
@@ -73,7 +73,7 @@ class SlackNotifier(Notifier):
 					payloadDict["text"] = payloadDict["text"] + "\nNext: "+finalDict["probables"]
 					self._sendSlack(payloadDict,self.channels["announce_channel"])			
 
-		if "backtalk" in newres.keys():
+		if "backtalk" in list(newres.keys()):
 			for backtalk in newres["backtalk"]:
 				payloadDict = {"text": self.backtalk_atuser + " " + backtalk, "link_names" : 1}
 				if self.channels["backtalk_channel"] != "":
@@ -81,7 +81,7 @@ class SlackNotifier(Notifier):
 				elif self.backtalk_atuser != "":
 					self._sendSlack(payloadDict,self.backtalk_atuser)
 
-		if "morningAnnounce" in newres.keys() and len(newres["morningAnnounce"]) > 0:
+		if "morningAnnounce" in list(newres.keys()) and len(newres["morningAnnounce"]) > 0:
 			text = "Good morning. *TODAY'S GAME*:"
 			if (len(newres["morningAnnounce"]) > 1):
 				text = re.sub("GAME","GAMES",text)
@@ -143,11 +143,12 @@ class SlackNotifier(Notifier):
 			if self.useEasterEggs and ("text" in payloadDict) and re.search("Roark",payloadDict["text"]) and re.search("Washington|WSH",payloadDict["text"]):
 				if (random.randint(0,9) == 0):
 					payloadDict["text"] = re.sub("(Tanner |)Roark","STAFF ACE Tanner Roark",payloadDict["text"])
-			data = urllib.urlencode({"payload": json.dumps(payloadDict)})
-			logging.debug("about to request " + json.dumps(payloadDict) + "\n" + data + "\nat " + self.webhook)
-			req = urllib2.Request(self.webhook, data)
-			response = urllib2.urlopen(req)
+			data = urllib.parse.urlencode({"payload": json.dumps(payloadDict)}).encode('utf-8')
+			logging.debug("about to request " + json.dumps(payloadDict) + "\nat " + self.webhook)
+			req = urllib.request.Request(self.webhook, data)
+			response = urllib.request.urlopen(req)
 			logging.debug(response.read())
-		except Exception, e:
-			logging.error("Couldn't post for some reason:\n" + traceback.format_exc(e))
+		except Exception as e:
+			logging.error("Couldn't post for some reason:")
+			logging.exception(e)
 			return

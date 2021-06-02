@@ -1,4 +1,4 @@
-from NotifierClass import Notifier
+from .NotifierClass import Notifier
 
 import twitter
 from datetime import datetime, timedelta

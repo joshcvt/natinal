@@ -1,4 +1,4 @@
-import xml.dom, urllib, ConfigParser, json, logging, traceback, re, argparse
+import xml.dom, urllib.request, urllib.parse, urllib.error, configparser, json, logging, traceback, re, argparse
 from datetime import timedelta, datetime, date
 from string import Template
 from xml.dom.minidom import parse
@@ -34,7 +34,7 @@ def loadLeagues():
 	for league in validLeagues:	# note, a "league" is actually a classification here
 		dirUrl = leagueAgnosticTeamDirectoryUrl.replace("{league}",league) 
 		logging.debug("loading class " + league + " from " + dirUrl)
-		usock = urllib.urlopen(dirUrl)
+		usock = urllib.request.urlopen(dirUrl)
 		if usock.getcode() != 200:
 			logging.error("Get teamdir failed for league " + league + " on " + dirUrl)
 			return None
@@ -43,7 +43,7 @@ def loadLeagues():
 		try:
 			dirTree = parse(usock)
 			for row in dirTree.getElementsByTagName("row"):
-				rowDict = dict(row.attributes.items())
+				rowDict = dict(list(row.attributes.items()))
 				# team_id and team_code are unique. name_abbrev is not even unique within classifications: COL for Columbus and Colorado Springs AAA
 				leagues[league][rowDict["team_id"]] = rowDict
 				teams[rowDict["team_id"]] = rowDict
@@ -77,12 +77,12 @@ def loadSchedule(tid,year=USE_CURRENT):
 	if year == USE_CURRENT:
 		year = datetime.now().strftime("%Y") 
 	else:
-		if isinstance(year,(int,long)):
+		if isinstance(year,int):
 			year = str(year)
 	
 	sched = []
 	# OK, now that that's over with
-	usock = urllib.urlopen(scheduleXmlUrl.replace("{year}",year).replace("{tid}",tid))
+	usock = urllib.request.urlopen(scheduleXmlUrl.replace("{year}",year).replace("{tid}",tid))
 	if usock.getcode() != 200:
 		logging.error("Get sched failed for tid " + tid + " on " + scheduleXmlUrl)
 		return None
@@ -92,7 +92,7 @@ def loadSchedule(tid,year=USE_CURRENT):
 		for stcomplete in schedTree.getElementsByTagName("schedule_team_complete"):	# should only be one
 			#logging.debug("got stcomplete for " + scheduleXmlUrl.replace("{year}",year).replace("{tid}",tid))
 			for row in stcomplete.getElementsByTagName("row"):				# should be a lot
-				rowDict = dict(row.attributes.items())
+				rowDict = dict(list(row.attributes.items()))
 				if rowDict["game_type"] in ("R","D","L","W"):
 					sched.append(rowDict)
 	except Exception as e:
@@ -188,7 +188,7 @@ def do_dh(scheds):
 		
 		dstr = dh_ok(yeardict[ymd])
 		if dstr:
-			print dstr
+			print(dstr)
 	
 	
 
