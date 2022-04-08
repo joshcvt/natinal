@@ -259,16 +259,16 @@ def pullStandings(msXML, standingsUrlTemplate, scheduleDT, newFinal=None):
 	seasonGames = int(baseDivisions[0]["league"]["numGames"])
 	
 	if newFinal:    
-	    gameToFinalize = int(newFinal["gamePk"])
+		gameToFinalize = int(newFinal["gamePk"])
 	else:
-	    gameToFinalize = None
+		gameToFinalize = None
 	gameToAdd = None
     	
 	for div in baseDivisions:
 		
 		lname = div["league"]["abbreviation"]   # AL or NL
 		if (int(div["league"]["numGames"]) != seasonGames):
-		    logging.error("We got variable season lengths (div/league/numGames) in standings URL " + baseStandingsUrl + ": " + str(seasonGames) + ", " + str(div["league"]["numGames"]))
+			logging.error("We got variable season lengths (div/league/numGames) in standings URL " + baseStandingsUrl + ": " + str(seasonGames) + ", " + str(div["league"]["numGames"]))
 		for rec in div["teamRecords"]:
 			td = {}
 			td["abbrev"] = rec["team"]["abbreviation"]
