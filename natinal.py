@@ -360,19 +360,22 @@ def doStandingsMagic(byDivList,seasonGames,prefix=""):
 	return byDivList
 	
 def loadMasterScoreboard(msURL, scheduleDT, msOverrideFN=None):
-	
 	if not msOverrideFN:
 		logging.debug( "Running scoreboard for " + scheduleDT.strftime("%Y-%m-%d"))
 		scheduleUrl = scheduleDT.strftime(msURL)
 		
 		logging.debug("Opening scheduleUrl: " + scheduleUrl)
-		usock = urllib.request.urlopen(scheduleUrl)
-		if (usock.getcode() == 404):
-			logging.info("Schedule not found. Either there are no games today or MLBAM has changed the master scoreboard URL.\n")
-			return None
-		elif (usock.getcode() != 200):
-			logging.error("HELP! Get schedule failed with HTTP code " + str(usock.getcode()) + " on URL:\n\t" + scheduleUrl + "\n")
-			raise Exception("Get schedule failed (non-404) with HTTP code " + str(usock.getcode()) + " on URL:\n\t" + scheduleUrl + "\n")
+		try:
+			usock = urllib.request.urlopen(scheduleUrl)
+			if (usock.getcode() == 404):
+				logging.info("Schedule not found. Either there are no games today or MLBAM has changed the master scoreboard URL.\n")
+				return None
+			elif (usock.getcode() != 200):
+				logging.error("HELP! Get schedule failed with HTTP code " + str(usock.getcode()) + " on URL:\n\t" + scheduleUrl + "\n")
+				raise Exception("Get schedule failed (non-404) with HTTP code " + str(usock.getcode()) + " on URL:\n\t" + scheduleUrl + "\n")
+		except Exception as e:
+			logging.error("HELP! Get schedule failed with exception:\n\t" + str(e) + " on URL:\n\t" + scheduleUrl + "\n")
+			raise Exception("Get schedule failed with exception:\n\t" + str(e) + " on URL:\n\t" + scheduleUrl + "\n")
 	else:
 		logging.debug("Running file scoreboard from " + msOverrideFN)
 		usock = open(msOverrideFN)
@@ -404,13 +407,18 @@ def pullValidTeams(cfgParser,teamDirUrl,pDict):
 	
 	teamIdDir = {}
 	if "teamIdDir" not in pDict:
-		usock = urllib.request.urlopen(teamDirUrl)
-		if (usock.getcode() != 200):
-			logging.error("Master team directory not found, error " + str(usock.getcode()) + ", URL:\n\t" + teamDirUrl)
-			quit
+		try:
+			usock = urllib.request.urlopen(teamDirUrl)
+			if (usock.getcode() != 200):
+				logging.error("Master team directory not found, error " + str(usock.getcode()) + ", URL:\n\t" + teamDirUrl)
+				quit
+			
+			usock.close()
+		except Exception as e:
+			logging.error("Get team directory failed with exception:\n\t" + str(e) + " on URL:\n\t" + teamDirUrl)
+			raise Exception("Get team directory failed with exception:\n\t" + str(e) + " on URL:\n\t" + teamDirUrl)
+		
 		masterDirXml = parse(usock)
-		usock.close()
-	
 		for teamRow in masterDirXml.getElementsByTagName("row"):
 			teamIdDir[teamRow.getAttribute("name_abbrev")] = teamRow.getAttribute("team_id")
 		
@@ -561,7 +569,11 @@ def nextGame(teamId, afterGameDir, xmlList, masterScoreboardUrl=None, maxMoreDay
 	while moreDayCount <= maxMoreDays:
 		if moreDayCount > 0:
 			maxDT = maxDT + timedelta(days=1)
-			xmlList = [loadMasterScoreboard(masterScoreboardUrl,maxDT)]
+			try:
+				xmlList = [loadMasterScoreboard(masterScoreboardUrl,maxDT)]
+			except:
+				logging.error("Couldn't load master scoreboard for date " + str(maxDT))
+				xmlList = []
 		
 		for xml in xmlList:
 			if xml != None:
@@ -768,7 +780,10 @@ def main():
 			persistDict[annType] = []
 
 	# load requested teams and sanity-check. if we make it back from this call, we're good to go forward and have at least one specified team
-	(validTeams,persistDict) = pullValidTeams(config,teamDirectoryUrl,persistDict)
+	try:
+		(validTeams,persistDict) = pullValidTeams(config,teamDirectoryUrl,persistDict)
+	except Exception as e:
+		logging.info("pullValidTeams failed: " + str(e))
 
 	# get master scoreboard DOM doc. Confirms that there are games today too.
 	masterScoreboardXml = loadMasterScoreboard(masterScoreboardUrl,todayDT,masterScoreboardOverride)
@@ -829,6 +844,7 @@ def main():
 	# declare it outside, then load it once inside if there's anything in newResults["finals"]
 	# anything farther forward, we'll make nextGame request out on the spot
 	tomorrowScoreboardXml = None
+	tsxAlreadyFailed = False
 	standings = None
 	
 	if "finals" in newResults:
@@ -838,14 +854,23 @@ def main():
 				newFinal["probables"] = ''
 				newFinal["standings"] = ''
 			else:
-				if tomorrowScoreboardXml == None:
-					tomorrowScoreboardXml = loadMasterScoreboard(masterScoreboardUrl,(todayDT + timedelta(days=1)))
-					if isRegularSeason(masterScoreboardXml):
-						standings = None #pullStandings(masterScoreboardXml,statsApiStandingsUrl,todayDT,newFinal)
+				if tomorrowScoreboardXml == None and not tsxAlreadyFailed:
+					try:
+						tomorrowScoreboardXml = loadMasterScoreboard(masterScoreboardUrl,(todayDT + timedelta(days=1)))
+						if isRegularSeason(masterScoreboardXml):
+							standings = None #pullStandings(masterScoreboardXml,statsApiStandingsUrl,todayDT,newFinal)
+					except Exception as e:
+						logging.error("tomorrowScoreboardXml failed: ")
+						logging.exception(e)
+						tsxAlreadyFailed = True
+						tomorrowScoreboardXml = None
+						standings = None
 				for teamId in newFinal["relevantteams"]:
 					probablesStr = getProbables(nextGame(teamId,newFinal["gamedir"],[masterScoreboardXml,tomorrowScoreboardXml],masterScoreboardUrl,6),tvTeam=teamId)
 					if probablesStr == None:
-						if "result" in newFinal and (newFinal["result"] == "win") and not isRegularSeason(masterScoreboardXml):
+						if tsxAlreadyFailed:
+							newFinal["probables"] = ''
+						elif "result" in newFinal and (newFinal["result"] == "win") and not isRegularSeason(masterScoreboardXml):
 							newFinal["probables"] = "Next game for " + teamId + " TBA."
 						else:
 							newFinal["probables"] = "No next game for " + teamId + " currently scheduled."

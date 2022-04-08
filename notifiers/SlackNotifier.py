@@ -67,10 +67,12 @@ class SlackNotifier(Notifier):
 							payloadDict["attachments"] = [{"fallback": "WIN! [GIF]", "image_url": self.wingifs[random.randint(1,len(self.wingifs))-1]}]
 				
 					self._sendSlack(payloadDict,self.channels["announce_channel"])
-					self._sendSlack({"link_names":1,"text":"Next: "+finalDict["probables"]}, self.channels["announce_channel"])
+					if ("probables" in finalDict) and (len(finalDict["probables"]) > 0):
+						self._sendSlack({"link_names":1,"text":"Next: "+finalDict["probables"]}, self.channels["announce_channel"])
 
 				else:
-					payloadDict["text"] = payloadDict["text"] + "\nNext: "+finalDict["probables"]
+					if ("probables" in finalDict) and (len(finalDict["probables"]) > 0):
+						payloadDict["text"] = payloadDict["text"] + "\nNext: "+finalDict["probables"]
 					self._sendSlack(payloadDict,self.channels["announce_channel"])			
 
 		if "backtalk" in list(newres.keys()):
